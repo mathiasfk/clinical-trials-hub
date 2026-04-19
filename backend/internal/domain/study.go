@@ -14,6 +14,8 @@ var AllowedTherapeuticAreas = []string{
 	"Sickle Cell Disease",
 	"Obesity",
 	"Rare Diseases",
+	"Oncology",
+	"Neurology",
 }
 
 func IsAllowedPhase(value string) bool {

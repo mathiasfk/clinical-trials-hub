@@ -30,7 +30,7 @@ export function CriteriaGroupEditor({
         const nextCriterion = { ...criterion, ...updates }
         if (updates.dimensionId !== undefined) {
           const dimension = findDimension(dimensions, updates.dimensionId)
-          nextCriterion.unit = dimension?.allowedUnits[0] ?? ''
+          nextCriterion.unit = dimension?.allowedUnits?.[0] ?? ''
         }
         return nextCriterion
       }),
@@ -70,7 +70,7 @@ export function CriteriaGroupEditor({
           <tbody>
             {criteria.map((criterion, index) => {
               const currentDimension = findDimension(dimensions, criterion.dimensionId)
-              const unitLabel = currentDimension?.allowedUnits[0] ?? ''
+              const unitLabel = currentDimension?.allowedUnits?.[0] ?? ''
 
               return (
                 <tr key={`${fieldKey}-${index}`} className="criteria-row">

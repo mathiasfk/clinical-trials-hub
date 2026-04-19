@@ -92,6 +92,59 @@ func TestUpdateStudyEligibilityValidation(t *testing.T) {
 	}
 }
 
+func TestUnitlessDimensionValidation(t *testing.T) {
+	t.Parallel()
+
+	service := NewStudyService(memory.NewStudyRepository(nil), staticIDGenerator("study-9999"))
+
+	_, err := service.CreateStudy(context.Background(), domain.StudyCreateInput{
+		Objectives: []string{"Primary objective"},
+		Endpoints:  []string{"Endpoint A"},
+		InclusionCriteria: []domain.EligibilityCriterion{
+			testCriterion("ECOG must be two or lower.", "ECOG", "<=", 2, ""),
+		},
+		ExclusionCriteria: []domain.EligibilityCriterion{
+			testCriterion("Exclude SBP below 95 mmHg.", "SBP", "<", 95, "mmHg"),
+		},
+		Participants:      100,
+		StudyType:         "parallel",
+		NumberOfArms:      2,
+		Phase:             "Phase 2",
+		TherapeuticArea:   "Oncology",
+		PatientPopulation: "Adults",
+	})
+	if err != nil {
+		t.Fatalf("expected empty unit for ECOG to be accepted, got %v", err)
+	}
+
+	_, err = service.CreateStudy(context.Background(), domain.StudyCreateInput{
+		Objectives: []string{"Primary objective"},
+		Endpoints:  []string{"Endpoint A"},
+		InclusionCriteria: []domain.EligibilityCriterion{
+			testCriterion("ECOG must be two or lower.", "ECOG", "<=", 2, "score"),
+		},
+		ExclusionCriteria: []domain.EligibilityCriterion{
+			testCriterion("Exclude SBP below 95 mmHg.", "SBP", "<", 95, "mmHg"),
+		},
+		Participants:      100,
+		StudyType:         "parallel",
+		NumberOfArms:      2,
+		Phase:             "Phase 2",
+		TherapeuticArea:   "Oncology",
+		PatientPopulation: "Adults",
+	})
+	if err == nil {
+		t.Fatal("expected validation error for non-empty unit on ECOG")
+	}
+	validationErr, ok := err.(*ValidationError)
+	if !ok {
+		t.Fatalf("expected ValidationError, got %T", err)
+	}
+	if validationErr.Fields["inclusionCriteria[0].deterministicRule.unit"] == "" {
+		t.Fatalf("expected unit validation error, got %#v", validationErr.Fields)
+	}
+}
+
 func TestUpdateStudyEligibilitySuccess(t *testing.T) {
 	t.Parallel()
 

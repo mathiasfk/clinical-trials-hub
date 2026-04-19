@@ -313,7 +313,7 @@ func TestCreateStudyRejectsUnsupportedPhaseAndTherapeuticArea(t *testing.T) {
 		"studyType":         "parallel",
 		"numberOfArms":      2,
 		"phase":             "Phase II",
-		"therapeuticArea":   "Oncology",
+		"therapeuticArea":   "Respiratory",
 		"patientPopulation": "Adults",
 	}
 	body, _ := json.Marshal(payload)

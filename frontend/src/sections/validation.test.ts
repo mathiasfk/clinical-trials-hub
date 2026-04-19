@@ -23,6 +23,12 @@ const DIMENSIONS: EligibilityDimension[] = [
     description: 'participant age',
     allowedUnits: [],
   },
+  {
+    id: 'ECOG',
+    displayName: 'ECOG',
+    description: 'Eastern Cooperative Oncology Group performance status (0–4)',
+    allowedUnits: [],
+  },
 ]
 
 const EMPTY_SOA = {
@@ -78,7 +84,7 @@ describe('validateStudyInformation', () => {
   it('rejects phase and therapeutic area outside the allow-lists', () => {
     const errors = validateStudyInformation({
       phase: 'Phase II',
-      therapeuticArea: 'Oncology',
+      therapeuticArea: 'Respiratory',
       patientPopulation: 'Adults',
       studyType: 'parallel',
       participants: 10,
@@ -232,6 +238,36 @@ describe('validateEligibility', () => {
       DIMENSIONS,
     )
     expect(errors.eligibilityCriteria).toBeTruthy()
+  })
+
+  it('accepts unitless dimensions with an empty unit and rejects a non-empty unit', () => {
+    const ok = validateEligibility(
+      {
+        inclusionCriteria: [
+          {
+            description: 'Performance status',
+            deterministicRule: { dimensionId: 'ECOG', operator: '<=', value: 2, unit: '' },
+          },
+        ],
+        exclusionCriteria: [],
+      },
+      DIMENSIONS,
+    )
+    expect(ok).toEqual({})
+
+    const bad = validateEligibility(
+      {
+        inclusionCriteria: [
+          {
+            description: 'Performance status',
+            deterministicRule: { dimensionId: 'ECOG', operator: '<=', value: 2, unit: 'score' },
+          },
+        ],
+        exclusionCriteria: [],
+      },
+      DIMENSIONS,
+    )
+    expect(bad['inclusionCriteria[0].deterministicRule.unit']).toBeTruthy()
   })
 
   it('rejects incomplete deterministic rules', () => {

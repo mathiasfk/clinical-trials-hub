@@ -19,8 +19,8 @@ func TestRepositoryAwareIDGeneratorSkipsSeededSuffixes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("generator should succeed: %v", err)
 	}
-	if id != "study-0003" {
-		t.Fatalf("expected study-0003, got %s", id)
+	if id != "study-0018" {
+		t.Fatalf("expected study-0018, got %s", id)
 	}
 }
 
@@ -55,24 +55,24 @@ func TestCreateStudyConsecutivelyIncrementsIDs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first create should succeed: %v", err)
 	}
-	if first.ID != "study-0003" {
-		t.Fatalf("expected study-0003, got %s", first.ID)
+	if first.ID != "study-0018" {
+		t.Fatalf("expected study-0018, got %s", first.ID)
 	}
 
 	second, err := svc.CreateStudy(context.Background(), input)
 	if err != nil {
 		t.Fatalf("second create should succeed: %v", err)
 	}
-	if second.ID != "study-0004" {
-		t.Fatalf("expected study-0004, got %s", second.ID)
+	if second.ID != "study-0019" {
+		t.Fatalf("expected study-0019, got %s", second.ID)
 	}
 
 	third, err := svc.CreateStudy(context.Background(), input)
 	if err != nil {
 		t.Fatalf("third create should succeed: %v", err)
 	}
-	if third.ID != "study-0005" {
-		t.Fatalf("expected study-0005, got %s", third.ID)
+	if third.ID != "study-0020" {
+		t.Fatalf("expected study-0020, got %s", third.ID)
 	}
 }
 

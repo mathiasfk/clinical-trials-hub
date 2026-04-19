@@ -173,8 +173,15 @@ function validateCriteriaGroup(
       errors[`${fieldKey}[${index}].deterministicRule.value`] = 'Value is required.'
     }
     const dimension = dimensions.find((d) => d.id === rule.dimensionId)
-    if (dimension && dimension.allowedUnits.length > 0 && !rule.unit) {
-      errors[`${fieldKey}[${index}].deterministicRule.unit`] = 'Unit is required for this dimension.'
+    if (dimension) {
+      const unitTrimmed = (rule.unit ?? '').trim()
+      const allowedUnits = dimension.allowedUnits ?? []
+      if (allowedUnits.length === 0 && unitTrimmed !== '') {
+        errors[`${fieldKey}[${index}].deterministicRule.unit`] =
+          'Unit is not supported for this dimension.'
+      } else if (allowedUnits.length > 0 && unitTrimmed === '') {
+        errors[`${fieldKey}[${index}].deterministicRule.unit`] = 'Unit is required for this dimension.'
+      }
     }
   })
 }

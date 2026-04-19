@@ -47,6 +47,8 @@ export const THERAPEUTIC_AREA_OPTIONS = [
   'Sickle Cell Disease',
   'Obesity',
   'Rare Diseases',
+  'Oncology',
+  'Neurology',
 ] as const
 
 export type TherapeuticAreaOption = (typeof THERAPEUTIC_AREA_OPTIONS)[number]
