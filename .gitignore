@@ -1,0 +1,12 @@
+.DS_Store
+.pnpm-store
+node_modules/
+node_modules/.pnpm/
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/coverage
+
+# Backend
+backend/bin
