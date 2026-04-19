@@ -133,6 +133,68 @@ describe('All studies view', () => {
     await screen.findByRole('heading', { name: /New study > Study information/i, level: 1 })
     expect(window.location.pathname).toBe('/studies/new/study-information')
   })
+
+  it('renders the study card with identity, clinical, and metadata regions', async () => {
+    installFetch(defaultHandler([SEED_STUDY]))
+    render(<App />)
+
+    const link = await screen.findByRole('link', { name: /study-0001/i })
+    expect(link).toHaveAttribute('href', '/studies/study-0001/summary')
+
+    const idEl = within(link).getByText('study-0001')
+    expect(idEl.tagName).toBe('STRONG')
+    const phaseEl = within(link).getByText('Phase 2')
+    expect(idEl.parentElement).toBe(phaseEl.parentElement)
+
+    expect(within(link).getByText('Cardiovascular')).toBeInTheDocument()
+    expect(within(link).getByText(/Adults with elevated inflammation markers/)).toBeInTheDocument()
+    expect(link.textContent ?? '').toContain(
+      'Cardiovascular · Adults with elevated inflammation markers',
+    )
+
+    expect(within(link).getByText('parallel')).toBeInTheDocument()
+    expect(within(link).getByText('120 participants')).toBeInTheDocument()
+    expect(within(link).getByText('2 arms')).toBeInTheDocument()
+    expect(within(link).getByText('2 criteria')).toBeInTheDocument()
+  })
+
+  it('omits the clinical separator and Not set placeholder when therapeutic area or population is empty', async () => {
+    const studies: Study[] = [
+      { ...SEED_STUDY, id: 'study-no-area', therapeuticArea: '' },
+      { ...SEED_STUDY, id: 'study-no-pop', patientPopulation: '' },
+    ]
+    installFetch(defaultHandler(studies))
+    render(<App />)
+
+    const noAreaLink = await screen.findByRole('link', { name: /study-no-area/i })
+    const noAreaText = noAreaLink.textContent ?? ''
+    expect(noAreaText).not.toContain(' · ')
+    expect(noAreaText).not.toMatch(/Not set/i)
+    expect(within(noAreaLink).getByText(/Adults with elevated inflammation markers/)).toBeInTheDocument()
+
+    const noPopLink = screen.getByRole('link', { name: /study-no-pop/i })
+    const noPopText = noPopLink.textContent ?? ''
+    expect(noPopText).not.toContain(' · ')
+    expect(noPopText).not.toMatch(/Not set/i)
+    expect(within(noPopLink).getByText('Cardiovascular')).toBeInTheDocument()
+  })
+
+  it('renders the FPFV entry only when firstPatientFirstVisit is set', async () => {
+    const studies: Study[] = [
+      { ...SEED_STUDY, id: 'study-with-fpfv', firstPatientFirstVisit: '2026-05-14' },
+      { ...SEED_STUDY, id: 'study-no-fpfv', firstPatientFirstVisit: '' },
+    ]
+    installFetch(defaultHandler(studies))
+    render(<App />)
+
+    const withFpfvLink = await screen.findByRole('link', { name: /study-with-fpfv/i })
+    const fpfvEntry = within(withFpfvLink).getByText(/^FPFV 2026-05-14$/)
+    expect(fpfvEntry).toHaveAttribute('title', 'First patient, first visit: 2026-05-14')
+
+    const noFpfvLink = screen.getByRole('link', { name: /study-no-fpfv/i })
+    expect(noFpfvLink.textContent ?? '').not.toMatch(/FPFV/)
+    expect(noFpfvLink.textContent ?? '').not.toMatch(/Not set/i)
+  })
 })
 
 describe('New study wizard', () => {

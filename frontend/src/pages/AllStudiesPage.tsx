@@ -55,23 +55,52 @@ export function AllStudiesPage({
         ) : null}
 
         <ul className="study-card-list">
-          {studies.map((study) => (
-            <li key={study.id}>
-              <Link className="study-card" to={`/studies/${study.id}/summary`}>
-                <span className="study-card-phase">{study.phase}</span>
-                <strong>{study.id}</strong>
-                <span>{study.therapeuticArea}</span>
-                <span>{study.patientPopulation}</span>
-                <div className="study-card-metadata">
-                  <span>{study.participants} participants</span>
-                  <span>{study.numberOfArms} arms</span>
-                  <span>
-                    {study.inclusionCriteria.length + study.exclusionCriteria.length} criteria
-                  </span>
-                </div>
-              </Link>
-            </li>
-          ))}
+          {studies.map((study) => {
+            const hasTherapeuticArea = study.therapeuticArea !== ''
+            const hasPatientPopulation = study.patientPopulation !== ''
+            const hasFpfv = study.firstPatientFirstVisit !== ''
+            const criteriaCount =
+              study.inclusionCriteria.length + study.exclusionCriteria.length
+
+            return (
+              <li key={study.id}>
+                <Link className="study-card" to={`/studies/${study.id}/summary`}>
+                  <div className="study-card-identity">
+                    <strong>{study.id}</strong>
+                    <span className="study-card-phase">{study.phase}</span>
+                  </div>
+                  {hasTherapeuticArea || hasPatientPopulation ? (
+                    <div className="study-card-clinical">
+                      {hasTherapeuticArea ? (
+                        <span title={study.therapeuticArea}>{study.therapeuticArea}</span>
+                      ) : null}
+                      {hasTherapeuticArea && hasPatientPopulation ? (
+                        <span className="study-card-separator" aria-hidden="true">
+                          {' · '}
+                        </span>
+                      ) : null}
+                      {hasPatientPopulation ? (
+                        <span title={study.patientPopulation}>{study.patientPopulation}</span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <div className="study-card-metadata">
+                    <span>{study.studyType}</span>
+                    <span>{study.participants} participants</span>
+                    <span>{study.numberOfArms} arms</span>
+                    <span>{criteriaCount} criteria</span>
+                    {hasFpfv ? (
+                      <span
+                        title={`First patient, first visit: ${study.firstPatientFirstVisit}`}
+                      >
+                        FPFV {study.firstPatientFirstVisit}
+                      </span>
+                    ) : null}
+                  </div>
+                </Link>
+              </li>
+            )
+          })}
         </ul>
       </section>
     </div>
