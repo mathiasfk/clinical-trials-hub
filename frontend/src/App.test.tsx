@@ -431,3 +431,129 @@ describe('Edit study summary', () => {
     await screen.findByText(/Study information saved\./i)
   })
 })
+
+describe('Eligibility assistant', () => {
+  const SECOND_STUDY: Study = {
+    id: 'study-0002',
+    objectives: [],
+    endpoints: [],
+    inclusionCriteria: [
+      {
+        description: 'hsCRP above 5 mg/L.',
+        deterministicRule: { dimensionId: 'hsCRP', operator: '>', value: 5, unit: 'mg/L' },
+      },
+    ],
+    exclusionCriteria: [
+      {
+        description: 'Age above 80 years.',
+        deterministicRule: { dimensionId: 'age', operator: '>', value: 80, unit: 'years old' },
+      },
+    ],
+    participants: 80,
+    studyType: 'parallel',
+    numberOfArms: 2,
+    phase: 'Phase 2',
+    therapeuticArea: 'Cardiovascular',
+    patientPopulation: 'Adults',
+    firstPatientFirstVisit: '',
+    lastPatientFirstVisit: '',
+    protocolApprovalDate: '',
+  }
+
+  function editHandlerWithStudies(studies: Study[]): FetchHandler {
+    return (url, init) => {
+      const method = init?.method ?? 'GET'
+      if (url === '/api/studies' && method === 'GET') {
+        return jsonResponse({ data: studies })
+      }
+      if (url === '/api/eligibility-dimensions') {
+        return jsonResponse({ data: DIMENSIONS })
+      }
+      const idMatch = url.match(/^\/api\/studies\/([^/]+)$/)
+      if (idMatch && method === 'GET') {
+        const found = studies.find((s) => s.id === idMatch[1])
+        if (found) {
+          return jsonResponse({ data: found })
+        }
+      }
+      throw new Error(`Unexpected request: ${method} ${url}`)
+    }
+  }
+
+  it('opens the FAB on Eligibility criteria and copies a criterion into the editor without a network call', async () => {
+    installFetch(editHandlerWithStudies([SEED_STUDY, SECOND_STUDY]))
+    window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/eligibility`)
+    render(<App />)
+
+    await screen.findByRole('heading', { name: /study-0001 > Eligibility criteria/i, level: 1 })
+    await flush()
+
+    fireEvent.click(screen.getByRole('button', { name: /Open StudyHub assistant/i }))
+
+    await waitFor(() => {
+      const secondFetched = fetchMock.mock.calls.some(
+        ([url]) => String(url) === '/api/studies',
+      )
+      expect(secondFetched).toBe(true)
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Copy criteria from another study/i }),
+    )
+
+    const studyButton = await screen.findByRole('button', { name: /study-0002/i })
+    fireEvent.click(studyButton)
+
+    const crit = await screen.findByRole('button', {
+      name: /Inclusion: hsCRP above 5 mg\/L/i,
+    })
+    fireEvent.click(crit)
+
+    await waitFor(() => {
+      const editorInputs = screen
+        .getAllByPlaceholderText(/Describe the criterion/i)
+        .map((el) => (el as HTMLInputElement).value)
+      expect(editorInputs).toContain('hsCRP above 5 mg/L.')
+    })
+
+    const eligibilityPuts = fetchMock.mock.calls.filter(
+      ([url, init]) =>
+        /\/api\/studies\/study-0001\/eligibility/.test(String(url)) &&
+        (init as RequestInit | undefined)?.method === 'PUT',
+    )
+    expect(eligibilityPuts).toHaveLength(0)
+  })
+
+  it('discards the conversation when navigating away and replays the intro on return', async () => {
+    installFetch(editHandlerWithStudies([SEED_STUDY, SECOND_STUDY]))
+    window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/eligibility`)
+    render(<App />)
+
+    await screen.findByRole('heading', { name: /study-0001 > Eligibility criteria/i, level: 1 })
+    fireEvent.click(screen.getByRole('button', { name: /Open StudyHub assistant/i }))
+    await waitFor(() => {
+      const listCalls = fetchMock.mock.calls.filter(
+        ([url, init]) =>
+          String(url) === '/api/studies' && (init?.method ?? 'GET') === 'GET',
+      )
+      expect(listCalls.length).toBeGreaterThanOrEqual(2)
+    })
+    await flush()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Copy criteria from another study/i }),
+    )
+    await screen.findByRole('button', { name: /study-0002/i })
+
+    window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/summary`)
+    fireEvent.popState(window)
+    await screen.findByRole('heading', { name: /study-0001 > Summary/i, level: 1 })
+
+    window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/eligibility`)
+    fireEvent.popState(window)
+    await screen.findByRole('heading', { name: /study-0001 > Eligibility criteria/i, level: 1 })
+
+    fireEvent.click(screen.getByRole('button', { name: /Open StudyHub assistant/i }))
+    expect(screen.getByText(/Welcome to StudyHub assistant/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /study-0002/i })).not.toBeInTheDocument()
+  })
+})

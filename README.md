@@ -31,6 +31,7 @@ It also includes:
 - Validation for required registration fields
 - Repository-aware study ID generation (IDs skip seeded/persisted suffixes and continue the `study-NNNN` sequence without collisions)
 - Eligibility minimum-validity requires **at least one criterion in total** across inclusion and exclusion (inclusion-only or exclusion-only studies are allowed)
+- **StudyHub assistant** on the `Eligibility criteria` screen: a menu-driven chat dock that can copy criteria from another registered study or suggest up to three criteria from similar studies. The assistant uses a deterministic heuristic (no AI, no embeddings) documented in [`docs/assistant-heuristic.md`](docs/assistant-heuristic.md).
 
 ## Project Structure
 
