@@ -21,8 +21,9 @@ func NewServer(studyService *service.StudyService) *Server {
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", s.handleHealth)
+	mux.HandleFunc("/api/eligibility-dimensions", s.handleEligibilityDimensions)
 	mux.HandleFunc("/api/studies", s.handleStudies)
-	mux.HandleFunc("/api/studies/", s.handleStudyByID)
+	mux.HandleFunc("/api/studies/", s.handleStudyRoute)
 
 	return withCORS(mux)
 }
@@ -77,13 +78,33 @@ func (s *Server) createStudy(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, map[string]domain.Study{"data": study})
 }
 
-func (s *Server) handleStudyByID(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleEligibilityDimensions(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeMethodNotAllowed(w)
 		return
 	}
 
-	id := strings.TrimPrefix(r.URL.Path, "/api/studies/")
+	writeJSON(w, http.StatusOK, map[string][]domain.DimensionDefinition{
+		"data": s.studyService.GetEligibilityDimensions(),
+	})
+}
+
+func (s *Server) handleStudyRoute(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/api/studies/")
+	if strings.HasSuffix(path, "/eligibility") {
+		s.handleStudyEligibility(w, r)
+		return
+	}
+
+	s.handleStudyByID(w, r, path)
+}
+
+func (s *Server) handleStudyByID(w http.ResponseWriter, r *http.Request, id string) {
+	if r.Method != http.MethodGet {
+		writeMethodNotAllowed(w)
+		return
+	}
+
 	if strings.TrimSpace(id) == "" {
 		writeError(w, http.StatusBadRequest, "study id is required", nil)
 		return
@@ -102,10 +123,52 @@ func (s *Server) handleStudyByID(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]domain.Study{"data": study})
 }
 
+func (s *Server) handleStudyEligibility(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		writeMethodNotAllowed(w)
+		return
+	}
+
+	id := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/api/studies/"), "/eligibility")
+	id = strings.TrimSuffix(id, "/")
+	if strings.TrimSpace(id) == "" {
+		writeError(w, http.StatusBadRequest, "study id is required", nil)
+		return
+	}
+
+	var payload domain.StudyEligibilityInput
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&payload); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON payload", nil)
+		return
+	}
+
+	study, err := s.studyService.UpdateStudyEligibility(r.Context(), id, payload)
+	if err != nil {
+		var validationErr *service.ValidationError
+		if errors.As(err, &validationErr) {
+			writeError(w, http.StatusBadRequest, "validation failed", validationErr.Fields)
+			return
+		}
+
+		var notFoundErr *service.NotFoundError
+		if errors.As(err, &notFoundErr) {
+			writeError(w, http.StatusNotFound, err.Error(), nil)
+			return
+		}
+
+		writeError(w, http.StatusInternalServerError, "failed to update study eligibility", nil)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]domain.Study{"data": study})
+}
+
 func withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if r.Method == http.MethodOptions {

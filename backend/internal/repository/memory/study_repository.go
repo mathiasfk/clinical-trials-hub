@@ -61,13 +61,34 @@ func (r *StudyRepository) GetByID(_ context.Context, id string) (domain.Study, b
 	return cloneStudy(study), true, nil
 }
 
+func (r *StudyRepository) UpdateEligibility(
+	_ context.Context,
+	id string,
+	inclusionCriteria []domain.EligibilityCriterion,
+	exclusionCriteria []domain.EligibilityCriterion,
+) (domain.Study, bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	study, ok := r.studies[id]
+	if !ok {
+		return domain.Study{}, false, nil
+	}
+
+	study.InclusionCriteria = cloneEligibilityCriteria(inclusionCriteria)
+	study.ExclusionCriteria = cloneEligibilityCriteria(exclusionCriteria)
+	r.studies[id] = cloneStudy(study)
+
+	return cloneStudy(study), true, nil
+}
+
 func cloneStudy(study domain.Study) domain.Study {
 	return domain.Study{
 		ID:                study.ID,
 		Objectives:        append([]string(nil), study.Objectives...),
 		Endpoints:         append([]string(nil), study.Endpoints...),
-		InclusionCriteria: append([]string(nil), study.InclusionCriteria...),
-		ExclusionCriteria: append([]string(nil), study.ExclusionCriteria...),
+		InclusionCriteria: cloneEligibilityCriteria(study.InclusionCriteria),
+		ExclusionCriteria: cloneEligibilityCriteria(study.ExclusionCriteria),
 		Participants:      study.Participants,
 		StudyType:         study.StudyType,
 		NumberOfArms:      study.NumberOfArms,
@@ -75,4 +96,21 @@ func cloneStudy(study domain.Study) domain.Study {
 		TherapeuticArea:   study.TherapeuticArea,
 		PatientPopulation: study.PatientPopulation,
 	}
+}
+
+func cloneEligibilityCriteria(criteria []domain.EligibilityCriterion) []domain.EligibilityCriterion {
+	cloned := make([]domain.EligibilityCriterion, 0, len(criteria))
+	for _, criterion := range criteria {
+		cloned = append(cloned, domain.EligibilityCriterion{
+			Description: criterion.Description,
+			DeterministicRule: domain.DeterministicRule{
+				DimensionID: criterion.DeterministicRule.DimensionID,
+				Operator:    criterion.DeterministicRule.Operator,
+				Value:       criterion.DeterministicRule.Value,
+				Unit:        criterion.DeterministicRule.Unit,
+			},
+		})
+	}
+
+	return cloned
 }

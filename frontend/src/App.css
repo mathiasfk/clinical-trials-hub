@@ -1,129 +1,306 @@
+.page,
+.workspace-shell {
+  padding: 1.5rem;
+}
+
 .page {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
-  padding: 1.5rem;
-  box-sizing: border-box;
 }
 
-.panel {
-  background: #fff;
-  border: 1px solid #d6d6d6;
-  border-radius: 0.75rem;
-  padding: 1rem;
-  box-sizing: border-box;
+.page-header,
+.workspace-page-header,
+.panel-header,
+.section-header,
+.criterion-editor-header,
+.button-row,
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
-.subtitle {
-  margin-bottom: 1rem;
+.page-header,
+.workspace-page-header {
+  align-items: flex-start;
+}
+
+.eyebrow {
+  margin-bottom: 0.25rem;
+  color: #365cb4;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.subtitle,
+.panel-copy {
   color: #4e4e4e;
+}
+
+.panel,
+.summary-card,
+.sidebar,
+.workspace-content {
+  background: #fff;
+  border: 1px solid #d6dce7;
+  border-radius: 1rem;
+  box-shadow: 0 8px 24px rgba(39, 55, 91, 0.05);
+}
+
+.panel,
+.summary-card,
+.workspace-content {
+  padding: 1.25rem;
+}
+
+.all-studies-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.1fr) minmax(360px, 1fr);
+  gap: 1.5rem;
+}
+
+.study-card-list,
+.detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.study-card-list {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.study-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border: 1px solid #d6dce7;
+  border-radius: 0.85rem;
+  background: #fbfcff;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.study-card:hover {
+  border-color: #2f6dd1;
+  box-shadow: 0 6px 16px rgba(47, 109, 209, 0.12);
+  transform: translateY(-1px);
+}
+
+.study-card-phase,
+.panel-badge {
+  width: fit-content;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #244890;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.study-card-metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+  color: #4e4e4e;
+  font-size: 0.92rem;
 }
 
 .form-grid {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.45rem;
+}
+
+.form-grid textarea,
+.form-grid input,
+.form-grid select,
+button,
+.secondary-button {
+  font: inherit;
 }
 
 .form-grid textarea,
 .form-grid input,
 .form-grid select {
-  font: inherit;
-  padding: 0.5rem;
-  border: 1px solid #b8b8b8;
-  border-radius: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #b8c2d6;
+  border-radius: 0.7rem;
+  background: #fff;
 }
 
 .form-grid textarea {
-  min-height: 4rem;
+  min-height: 4.5rem;
   resize: vertical;
 }
 
-.field-error {
-  margin: 0 0 0.5rem;
-  color: #9b2020;
-  font-size: 0.9rem;
+button,
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1rem;
+  border-radius: 0.7rem;
+  border: 1px solid #c2cde2;
+  background: #fff;
+  color: #24324b;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 .submit-button {
-  margin-top: 0.5rem;
-  padding: 0.65rem 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid #1f56aa;
+  border-color: #1f56aa;
   background: #2f6dd1;
   color: #fff;
-  cursor: pointer;
 }
 
+button:disabled,
 .submit-button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.field-error,
+.error-message,
+.success-message {
+  font-size: 0.92rem;
 }
 
-.studies-layout {
-  margin-top: 1rem;
-  display: grid;
-  grid-template-columns: minmax(240px, 1fr) 2fr;
-  gap: 1rem;
-}
-
-.study-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.5rem;
-}
-
-.study-list button {
-  width: 100%;
-  text-align: left;
-  border: 1px solid #c4c4c4;
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-  display: grid;
-  gap: 0.25rem;
-  background: #fff;
-  cursor: pointer;
-}
-
-.study-list button.active {
-  border-color: #2f6dd1;
-  background: #f4f8ff;
-}
-
-.study-detail {
-  border: 1px solid #e0e0e0;
-  border-radius: 0.5rem;
-  padding: 0.75rem;
-}
-
-.study-detail ul {
-  margin-top: 0.25rem;
-  padding-left: 1rem;
-}
-
+.field-error,
 .error-message {
   color: #9b2020;
-  margin-top: 0.75rem;
 }
 
 .success-message {
   color: #1f7a3f;
-  margin-top: 0.75rem;
 }
 
-@media (max-width: 960px) {
-  .page {
+.criteria-group {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #dfe5f0;
+  border-radius: 0.9rem;
+  background: #fafcff;
+}
+
+.criterion-editor {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.9rem;
+  border: 1px solid #d6dce7;
+  border-radius: 0.85rem;
+  background: #fff;
+}
+
+.criterion-rule-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.criterion-rule-grid > div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.dimension-help,
+.criterion-preview {
+  color: #5b6781;
+  font-size: 0.9rem;
+}
+
+.workspace-shell {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1.25rem;
+  min-height: 100vh;
+}
+
+.sidebar {
+  padding: 1.25rem;
+  display: grid;
+  align-self: start;
+  gap: 1rem;
+  position: sticky;
+  top: 1.5rem;
+}
+
+.sidebar-block {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.sidebar-nav a {
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
+  color: #33415c;
+  text-decoration: none;
+}
+
+.sidebar-nav a.active {
+  background: #eef4ff;
+  color: #1f56aa;
+  font-weight: 700;
+}
+
+.workspace-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.summary-card-content {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.detail-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.detail-list li {
+  padding: 0.75rem;
+  border-radius: 0.8rem;
+  background: #f7f9fd;
+}
+
+.eligibility-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+@media (max-width: 1100px) {
+  .all-studies-layout,
+  .workspace-shell,
+  .summary-grid,
+  .criterion-rule-grid {
     grid-template-columns: 1fr;
   }
 
-  .studies-layout {
-    grid-template-columns: 1fr;
+  .sidebar {
+    position: static;
   }
 }

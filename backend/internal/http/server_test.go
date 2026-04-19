@@ -32,6 +32,20 @@ func TestListStudies(t *testing.T) {
 	}
 }
 
+func TestListEligibilityDimensions(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer()
+	request := httptest.NewRequest(http.MethodGet, "/api/eligibility-dimensions", nil)
+	recorder := httptest.NewRecorder()
+
+	server.Routes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+}
+
 func TestCreateStudyValidationError(t *testing.T) {
 	t.Parallel()
 
@@ -52,10 +66,15 @@ func TestCreateAndGetStudy(t *testing.T) {
 
 	server := newTestServer()
 	payload := map[string]any{
-		"objectives":        []string{"Measure progression-free survival"},
-		"endpoints":         []string{"Median progression-free survival at 24 weeks"},
-		"inclusionCriteria": []string{"Age >= 18 years", "Histologically confirmed disease"},
-		"exclusionCriteria": []string{"Recent major surgery", "Uncontrolled infection"},
+		"objectives": []string{"Measure progression-free survival"},
+		"endpoints":  []string{"Median progression-free survival at 24 weeks"},
+		"inclusionCriteria": []map[string]any{
+			criterionPayload("Require age above 18.", "age", ">", 18, ""),
+			criterionPayload("Require hsCRP above 2 mg/L.", "hsCRP", ">", 2, "mg/L"),
+		},
+		"exclusionCriteria": []map[string]any{
+			criterionPayload("Exclude systolic blood pressure below 95 mmHg.", "SBP", "<", 95, "mmHg"),
+		},
 		"participants":      72,
 		"studyType":         "parallel",
 		"numberOfArms":      2,
@@ -92,5 +111,42 @@ func TestCreateAndGetStudy(t *testing.T) {
 
 	if getRecorder.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", getRecorder.Code)
+	}
+}
+
+func TestUpdateStudyEligibility(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer()
+	payload := map[string]any{
+		"inclusionCriteria": []map[string]any{
+			criterionPayload("Require LVEF below 40%.", "LVEF", "<", 40, "%"),
+		},
+		"exclusionCriteria": []map[string]any{
+			criterionPayload("Exclude participants younger than 18.", "age", "<", 18, ""),
+		},
+	}
+	body, _ := json.Marshal(payload)
+
+	request := httptest.NewRequest(http.MethodPut, "/api/studies/study-0001/eligibility", bytes.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+
+	server.Routes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+}
+
+func criterionPayload(description, dimensionID, operator string, value float64, unit string) map[string]any {
+	return map[string]any{
+		"description": description,
+		"deterministicRule": map[string]any{
+			"dimensionId": dimensionID,
+			"operator":    operator,
+			"value":       value,
+			"unit":        unit,
+		},
 	}
 }
