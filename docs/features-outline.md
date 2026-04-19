@@ -1,0 +1,27 @@
+Features:
+- Study registration
+    - Objectives
+    - Endpoints
+    - I/E criteria
+    - Number of participants
+    - Study type (egg.: parallel/crossover/single-arm)
+    - Number of arms (egg.: 3)
+    - Phase
+    - Therapeutic area
+    - Patient population
+- Study information
+    - Expected FPFV
+    - Expected protocol approval date
+    - Protocol type
+- Schedule of Activities (SOA) validation
+- Similar studies detection
+- Insights
+    - Recruitment stats
+    - Cycle time stats
+- AI assistant
+    - Based on current feature/screen
+    - Add I/E criteria from other study
+    - Propose new I/E criteria
+    - Compare with other studies
+- Decision log
+    - Tracks changes in criteria or objective
