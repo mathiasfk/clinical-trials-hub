@@ -69,7 +69,7 @@ func TestCreateAndGetStudy(t *testing.T) {
 		"objectives": []string{"Measure progression-free survival"},
 		"endpoints":  []string{"Median progression-free survival at 24 weeks"},
 		"inclusionCriteria": []map[string]any{
-			criterionPayload("Require age above 18.", "age", ">", 18, ""),
+			criterionPayload("Require age above 18.", "age", ">", 18, "years old"),
 			criterionPayload("Require hsCRP above 2 mg/L.", "hsCRP", ">", 2, "mg/L"),
 		},
 		"exclusionCriteria": []map[string]any{
@@ -114,6 +114,103 @@ func TestCreateAndGetStudy(t *testing.T) {
 	}
 }
 
+func TestReplaceStudySuccess(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer()
+	payload := map[string]any{
+		"objectives": []string{"Updated objective"},
+		"endpoints":  []string{"Updated endpoint"},
+		"inclusionCriteria": []map[string]any{
+			criterionPayload("Require hsCRP above 2 mg/L.", "hsCRP", ">", 2, "mg/L"),
+		},
+		"exclusionCriteria": []map[string]any{
+			criterionPayload("Exclude SBP below 95 mmHg.", "SBP", "<", 95, "mmHg"),
+		},
+		"participants":      150,
+		"studyType":         "parallel",
+		"numberOfArms":      3,
+		"phase":             "Phase III",
+		"therapeuticArea":   "Oncology",
+		"patientPopulation": "Adults",
+	}
+	body, _ := json.Marshal(payload)
+
+	request := httptest.NewRequest(http.MethodPut, "/api/studies/study-0001", bytes.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+
+	server.Routes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+
+	var response struct {
+		Data struct {
+			ID    string `json:"id"`
+			Phase string `json:"phase"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("expected valid JSON response: %v", err)
+	}
+	if response.Data.ID != "study-0001" {
+		t.Fatalf("expected id study-0001, got %s", response.Data.ID)
+	}
+	if response.Data.Phase != "Phase III" {
+		t.Fatalf("expected updated phase, got %s", response.Data.Phase)
+	}
+}
+
+func TestReplaceStudyValidationError(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer()
+	request := httptest.NewRequest(http.MethodPut, "/api/studies/study-0001", bytes.NewBufferString("{}"))
+	request.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+
+	server.Routes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", recorder.Code)
+	}
+}
+
+func TestReplaceStudyNotFound(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer()
+	payload := map[string]any{
+		"objectives": []string{"Updated objective"},
+		"endpoints":  []string{"Updated endpoint"},
+		"inclusionCriteria": []map[string]any{
+			criterionPayload("Require hsCRP above 2 mg/L.", "hsCRP", ">", 2, "mg/L"),
+		},
+		"exclusionCriteria": []map[string]any{
+			criterionPayload("Exclude SBP below 95 mmHg.", "SBP", "<", 95, "mmHg"),
+		},
+		"participants":      150,
+		"studyType":         "parallel",
+		"numberOfArms":      3,
+		"phase":             "Phase III",
+		"therapeuticArea":   "Oncology",
+		"patientPopulation": "Adults",
+	}
+	body, _ := json.Marshal(payload)
+
+	request := httptest.NewRequest(http.MethodPut, "/api/studies/study-missing", bytes.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+
+	server.Routes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("expected status 404, got %d", recorder.Code)
+	}
+}
+
 func TestUpdateStudyEligibility(t *testing.T) {
 	t.Parallel()
 
@@ -123,7 +220,7 @@ func TestUpdateStudyEligibility(t *testing.T) {
 			criterionPayload("Require LVEF below 40%.", "LVEF", "<", 40, "%"),
 		},
 		"exclusionCriteria": []map[string]any{
-			criterionPayload("Exclude participants younger than 18.", "age", "<", 18, ""),
+			criterionPayload("Exclude participants younger than 18.", "age", "<", 18, "years old"),
 		},
 	}
 	body, _ := json.Marshal(payload)

@@ -101,7 +101,7 @@ func TestUpdateStudyEligibilitySuccess(t *testing.T) {
 			Objectives: []string{"Primary objective"},
 			Endpoints:  []string{"Endpoint A"},
 			InclusionCriteria: []domain.EligibilityCriterion{
-				testCriterion("Require age above 18.", "age", ">", 18, ""),
+				testCriterion("Require age above 18.", "age", ">", 18, "years old"),
 			},
 			ExclusionCriteria: []domain.EligibilityCriterion{
 				testCriterion("Exclude SBP below 95 mmHg.", "SBP", "<", 95, "mmHg"),
@@ -132,6 +132,118 @@ func TestUpdateStudyEligibilitySuccess(t *testing.T) {
 	}
 	if study.InclusionCriteria[0].DeterministicRule.Unit != "mg/L" {
 		t.Fatalf("expected canonical unit, got %#v", study.InclusionCriteria)
+	}
+}
+
+func TestReplaceStudySuccess(t *testing.T) {
+	t.Parallel()
+
+	repo := memory.NewStudyRepository([]domain.Study{
+		{
+			ID:         "study-9999",
+			Objectives: []string{"Original objective"},
+			Endpoints:  []string{"Original endpoint"},
+			InclusionCriteria: []domain.EligibilityCriterion{
+				testCriterion("Require age above 18.", "age", ">", 18, "years old"),
+			},
+			ExclusionCriteria: []domain.EligibilityCriterion{
+				testCriterion("Exclude SBP below 95 mmHg.", "SBP", "<", 95, "mmHg"),
+			},
+			Participants:      100,
+			StudyType:         "parallel",
+			NumberOfArms:      2,
+			Phase:             "Phase I",
+			TherapeuticArea:   "Cardiology",
+			PatientPopulation: "Adults",
+		},
+	})
+	service := NewStudyService(repo, staticIDGenerator("unused"))
+
+	updated, err := service.ReplaceStudy(context.Background(), "study-9999", domain.StudyCreateInput{
+		Objectives: []string{"Updated objective"},
+		Endpoints:  []string{"Updated endpoint"},
+		InclusionCriteria: []domain.EligibilityCriterion{
+			testCriterion("Require hsCRP above 2 mg/L.", "hsCRP", ">", 2, "mg/L"),
+		},
+		ExclusionCriteria: []domain.EligibilityCriterion{
+			testCriterion("Exclude LVEF below 40%.", "LVEF", "<", 40, "%"),
+		},
+		Participants:      150,
+		StudyType:         "parallel",
+		NumberOfArms:      3,
+		Phase:             "Phase II",
+		TherapeuticArea:   "Oncology",
+		PatientPopulation: "Adults with advanced solid tumors",
+	})
+	if err != nil {
+		t.Fatalf("expected replace study to succeed, got %v", err)
+	}
+	if updated.ID != "study-9999" {
+		t.Fatalf("expected preserved id study-9999, got %s", updated.ID)
+	}
+	if updated.Objectives[0] != "Updated objective" {
+		t.Fatalf("expected updated objective, got %#v", updated.Objectives)
+	}
+	if updated.Phase != "Phase II" {
+		t.Fatalf("expected updated phase, got %s", updated.Phase)
+	}
+	if updated.Participants != 150 {
+		t.Fatalf("expected updated participants, got %d", updated.Participants)
+	}
+}
+
+func TestReplaceStudyNotFound(t *testing.T) {
+	t.Parallel()
+
+	service := NewStudyService(memory.NewStudyRepository(nil), staticIDGenerator("unused"))
+
+	_, err := service.ReplaceStudy(context.Background(), "missing", domain.StudyCreateInput{
+		Objectives: []string{"Primary objective"},
+		Endpoints:  []string{"Endpoint A"},
+		InclusionCriteria: []domain.EligibilityCriterion{
+			testCriterion("Require age above 18.", "age", ">", 18, "years old"),
+		},
+		ExclusionCriteria: []domain.EligibilityCriterion{
+			testCriterion("Exclude SBP below 95 mmHg.", "SBP", "<", 95, "mmHg"),
+		},
+		Participants:      100,
+		StudyType:         "parallel",
+		NumberOfArms:      2,
+		Phase:             "Phase II",
+		TherapeuticArea:   "Oncology",
+		PatientPopulation: "Adults",
+	})
+	if err == nil {
+		t.Fatal("expected not found error")
+	}
+
+	if _, ok := err.(*NotFoundError); !ok {
+		t.Fatalf("expected NotFoundError, got %T", err)
+	}
+}
+
+func TestReplaceStudyValidation(t *testing.T) {
+	t.Parallel()
+
+	repo := memory.NewStudyRepository([]domain.Study{
+		{ID: "study-9999"},
+	})
+	service := NewStudyService(repo, staticIDGenerator("unused"))
+
+	_, err := service.ReplaceStudy(context.Background(), "study-9999", domain.StudyCreateInput{})
+	if err == nil {
+		t.Fatal("expected validation error")
+	}
+
+	validationErr, ok := err.(*ValidationError)
+	if !ok {
+		t.Fatalf("expected ValidationError, got %T", err)
+	}
+	if validationErr.Fields["phase"] == "" {
+		t.Fatal("expected validation error for phase")
+	}
+	if validationErr.Fields["objectives"] == "" {
+		t.Fatal("expected validation error for objectives")
 	}
 }
 

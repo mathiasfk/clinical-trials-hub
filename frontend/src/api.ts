@@ -39,6 +39,18 @@ export async function createStudy(input: StudyCreateInput): Promise<Study> {
   return payload.data
 }
 
+export async function replaceStudy(id: string, input: StudyCreateInput): Promise<Study> {
+  const response = await fetch(`/api/studies/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  })
+  const payload = await parseResponse<{ data: Study }>(response)
+  return payload.data
+}
+
 export async function updateStudyEligibility(id: string, input: StudyEligibilityInput): Promise<Study> {
   const response = await fetch(`/api/studies/${id}/eligibility`, {
     method: 'PUT',

@@ -16,4 +16,5 @@ type StudyRepository interface {
 		inclusionCriteria []domain.EligibilityCriterion,
 		exclusionCriteria []domain.EligibilityCriterion,
 	) (domain.Study, bool, error)
+	Replace(ctx context.Context, study domain.Study) (domain.Study, bool, error)
 }

@@ -221,11 +221,152 @@ button:disabled,
   font-size: 0.9rem;
 }
 
-.workspace-shell {
+.workspace-shell,
+.app-shell {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
   gap: 1.25rem;
   min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.app-shell {
+  padding: 1.5rem;
+}
+
+.content-header {
+  padding: 0 0 1rem;
+  border-bottom: 1px solid #dfe5f0;
+  margin-bottom: 1rem;
+}
+
+.content-header-subtitle {
+  color: #5b6781;
+  font-weight: 500;
+}
+
+.draft-badge {
+  display: inline-block;
+  margin-left: 0.75rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: #fdecc8;
+  color: #8a4b00;
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.sidebar-section-label {
+  color: #5b6781;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin: 0.5rem 0 0.25rem;
+  text-transform: uppercase;
+}
+
+.sidebar-draft-indicator {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.5rem;
+  background: #fff6e0;
+  color: #8a4b00;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.section-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.summary-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pencil-icon {
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  color: #365cb4;
+  background: #eef4ff;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.pencil-icon:hover {
+  background: #dbe7ff;
+}
+
+.list-field-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.list-field-input {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.incomplete-sections {
+  padding: 1rem;
+  border: 1px solid #f7c59f;
+  border-radius: 0.75rem;
+  background: #fff8f1;
+}
+
+.incomplete-sections ul {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.25rem;
+}
+
+.danger-button {
+  border-color: #a01e1e;
+  background: #c23b3b;
+  color: #fff;
+}
+
+.danger-button:hover {
+  background: #a01e1e;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 25, 40, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  max-width: 28rem;
+  width: 100%;
+  box-shadow: 0 12px 32px rgba(17, 25, 40, 0.25);
+  display: grid;
+  gap: 1rem;
+}
+
+.modal-description {
+  color: #4e4e4e;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .sidebar {

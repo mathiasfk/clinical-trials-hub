@@ -1,0 +1,139 @@
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+import type { ApiErrorResponse } from '../types'
+import { nextSection } from './constants'
+import { CriteriaGroupEditor } from './EligibilityEditor'
+import type { CriterionDraft } from './eligibilityDrafts'
+import {
+  criteriaToDrafts,
+  draftsToCriteria,
+  extractErrorMessage,
+} from './eligibilityDrafts'
+import { SectionFooter } from './SectionFooter'
+import { useSectionContext } from './SectionContext'
+import { validateEligibility } from './validation'
+
+export function EligibilityCriteriaScreen() {
+  const ctx = useSectionContext()
+
+  if (ctx.mode === 'edit' && !ctx.study) {
+    if (ctx.isLoadingStudy) {
+      return <p>Loading study...</p>
+    }
+    if (ctx.loadError) {
+      return <p className="error-message">{ctx.loadError}</p>
+    }
+    return <p>Study not found.</p>
+  }
+
+  return <EligibilityForm key={ctx.mode === 'edit' ? ctx.studyId : 'new'} />
+}
+
+function EligibilityForm() {
+  const ctx = useSectionContext()
+  const navigate = useNavigate()
+
+  const initialInclusion =
+    ctx.mode === 'edit'
+      ? ctx.study!.inclusionCriteria
+      : ctx.draft.eligibility.inclusionCriteria
+
+  const initialExclusion =
+    ctx.mode === 'edit'
+      ? ctx.study!.exclusionCriteria
+      : ctx.draft.eligibility.exclusionCriteria
+
+  const [inclusionCriteria, setInclusionCriteria] = useState<CriterionDraft[]>(() =>
+    criteriaToDrafts(initialInclusion, ctx.dimensions),
+  )
+  const [exclusionCriteria, setExclusionCriteria] = useState<CriterionDraft[]>(() =>
+    criteriaToDrafts(initialExclusion, ctx.dimensions),
+  )
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [submitError, setSubmitError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [isBusy, setIsBusy] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSubmitError('')
+    setSuccessMessage('')
+
+    const inclusion = draftsToCriteria(inclusionCriteria)
+    const exclusion = draftsToCriteria(exclusionCriteria)
+    const errors = validateEligibility(
+      { inclusionCriteria: inclusion, exclusionCriteria: exclusion },
+      ctx.dimensions,
+    )
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
+      return
+    }
+    setValidationErrors({})
+
+    if (ctx.mode === 'new') {
+      ctx.setEligibility({
+        inclusionCriteria: inclusion,
+        exclusionCriteria: exclusion,
+      })
+      const next = nextSection('eligibility')
+      if (next) {
+        navigate(`/studies/new/${next}`)
+      }
+      return
+    }
+
+    setIsBusy(true)
+    try {
+      await ctx.updateEligibility({
+        inclusionCriteria: inclusion,
+        exclusionCriteria: exclusion,
+      })
+      setSuccessMessage('Eligibility criteria saved.')
+    } catch (error) {
+      const apiError = error as ApiErrorResponse
+      setSubmitError(extractErrorMessage(error, 'Failed to save eligibility criteria.'))
+      setValidationErrors(apiError.errors ?? {})
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
+  return (
+    <form className="form-grid" onSubmit={handleSubmit}>
+      <h2>Eligibility criteria</h2>
+      <p className="subtitle">
+        Add inclusion and exclusion criteria with a readable description and a deterministic rule.
+      </p>
+
+      {ctx.dimensionsError ? <p className="error-message">{ctx.dimensionsError}</p> : null}
+
+      <CriteriaGroupEditor
+        title="Inclusion criteria"
+        fieldKey="inclusionCriteria"
+        criteria={inclusionCriteria}
+        dimensions={ctx.dimensions}
+        validationErrors={validationErrors}
+        onChange={setInclusionCriteria}
+      />
+
+      <CriteriaGroupEditor
+        title="Exclusion criteria"
+        fieldKey="exclusionCriteria"
+        criteria={exclusionCriteria}
+        dimensions={ctx.dimensions}
+        validationErrors={validationErrors}
+        onChange={setExclusionCriteria}
+      />
+
+      <SectionFooter
+        mode={ctx.mode}
+        busy={isBusy}
+        submitError={submitError}
+        successMessage={successMessage}
+      />
+    </form>
+  )
+}

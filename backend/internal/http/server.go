@@ -100,16 +100,22 @@ func (s *Server) handleStudyRoute(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleStudyByID(w http.ResponseWriter, r *http.Request, id string) {
-	if r.Method != http.MethodGet {
-		writeMethodNotAllowed(w)
-		return
-	}
-
 	if strings.TrimSpace(id) == "" {
 		writeError(w, http.StatusBadRequest, "study id is required", nil)
 		return
 	}
 
+	switch r.Method {
+	case http.MethodGet:
+		s.getStudyByID(w, r, id)
+	case http.MethodPut:
+		s.replaceStudy(w, r, id)
+	default:
+		writeMethodNotAllowed(w)
+	}
+}
+
+func (s *Server) getStudyByID(w http.ResponseWriter, r *http.Request, id string) {
 	study, found, err := s.studyService.GetStudyByID(r.Context(), id)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to read study", nil)
@@ -117,6 +123,37 @@ func (s *Server) handleStudyByID(w http.ResponseWriter, r *http.Request, id stri
 	}
 	if !found {
 		writeError(w, http.StatusNotFound, "study not found", nil)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]domain.Study{"data": study})
+}
+
+func (s *Server) replaceStudy(w http.ResponseWriter, r *http.Request, id string) {
+	var payload domain.StudyCreateInput
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&payload); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON payload", nil)
+		return
+	}
+
+	study, err := s.studyService.ReplaceStudy(r.Context(), id, payload)
+	if err != nil {
+		var validationErr *service.ValidationError
+		if errors.As(err, &validationErr) {
+			writeError(w, http.StatusBadRequest, "validation failed", validationErr.Fields)
+			return
+		}
+
+		var notFoundErr *service.NotFoundError
+		if errors.As(err, &notFoundErr) {
+			writeError(w, http.StatusNotFound, err.Error(), nil)
+			return
+		}
+
+		writeError(w, http.StatusInternalServerError, "failed to replace study", nil)
 		return
 	}
 

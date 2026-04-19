@@ -44,7 +44,7 @@ var eligibilityDimensions = []DimensionDefinition{
 		ID:           "age",
 		DisplayName:  "Age",
 		Description:  "participant age",
-		AllowedUnits: nil,
+		AllowedUnits: []string{"years old"},
 	},
 }
 

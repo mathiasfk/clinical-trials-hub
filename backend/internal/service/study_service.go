@@ -96,6 +96,46 @@ func (s *StudyService) GetStudyByID(ctx context.Context, id string) (domain.Stud
 	return s.repository.GetByID(ctx, strings.TrimSpace(id))
 }
 
+func (s *StudyService) ReplaceStudy(
+	ctx context.Context,
+	id string,
+	input domain.StudyCreateInput,
+) (domain.Study, error) {
+	normalizedID := strings.TrimSpace(id)
+	if normalizedID == "" {
+		return domain.Study{}, &NotFoundError{Resource: "study"}
+	}
+
+	normalized, err := normalizeAndValidateCreateInput(input)
+	if err != nil {
+		return domain.Study{}, err
+	}
+
+	study := domain.Study{
+		ID:                normalizedID,
+		Objectives:        normalized.Objectives,
+		Endpoints:         normalized.Endpoints,
+		InclusionCriteria: normalized.InclusionCriteria,
+		ExclusionCriteria: normalized.ExclusionCriteria,
+		Participants:      normalized.Participants,
+		StudyType:         normalized.StudyType,
+		NumberOfArms:      normalized.NumberOfArms,
+		Phase:             normalized.Phase,
+		TherapeuticArea:   normalized.TherapeuticArea,
+		PatientPopulation: normalized.PatientPopulation,
+	}
+
+	updated, found, err := s.repository.Replace(ctx, study)
+	if err != nil {
+		return domain.Study{}, err
+	}
+	if !found {
+		return domain.Study{}, &NotFoundError{Resource: "study"}
+	}
+
+	return updated, nil
+}
+
 func (s *StudyService) UpdateStudyEligibility(
 	ctx context.Context,
 	id string,

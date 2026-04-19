@@ -23,7 +23,7 @@ func TestStudyRepositoryContract(t *testing.T) {
 			Objectives: []string{"Primary objective"},
 			Endpoints:  []string{"Endpoint A"},
 			InclusionCriteria: []domain.EligibilityCriterion{
-				testCriterion("Eligible adults must be older than 18.", "age", ">", 18, ""),
+				testCriterion("Eligible adults must be older than 18.", "age", ">", 18, "years old"),
 			},
 			ExclusionCriteria: []domain.EligibilityCriterion{
 				testCriterion("Exclude participants with SBP below 95 mmHg.", "SBP", "<", 95, "mmHg"),
@@ -79,6 +79,37 @@ func TestStudyRepositoryContract(t *testing.T) {
 		}
 		if updated.InclusionCriteria[0].DeterministicRule.DimensionID != "hsCRP" {
 			t.Fatalf("expected updated inclusion criteria, got %#v", updated.InclusionCriteria)
+		}
+
+		replaced, found, err := repo.Replace(ctx, domain.Study{
+			ID:                first.ID,
+			Objectives:        []string{"Replaced objective"},
+			Endpoints:         []string{"Replaced endpoint"},
+			InclusionCriteria: updated.InclusionCriteria,
+			ExclusionCriteria: updated.ExclusionCriteria,
+			Participants:      200,
+			StudyType:         "crossover",
+			NumberOfArms:      3,
+			Phase:             "Phase III",
+			TherapeuticArea:   "Immunology",
+			PatientPopulation: "Adults with autoimmune disease",
+		})
+		if err != nil {
+			t.Fatalf("replace should succeed: %v", err)
+		}
+		if !found {
+			t.Fatal("expected replace to find study")
+		}
+		if replaced.Phase != "Phase III" {
+			t.Fatalf("expected replaced phase, got %s", replaced.Phase)
+		}
+
+		_, found, err = repo.Replace(ctx, domain.Study{ID: "missing"})
+		if err != nil {
+			t.Fatalf("replace of missing study should not error: %v", err)
+		}
+		if found {
+			t.Fatal("expected replace of missing study to return not found")
 		}
 	}
 

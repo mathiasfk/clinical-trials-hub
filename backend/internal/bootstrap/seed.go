@@ -15,6 +15,7 @@ func SeedStudies() []domain.Study {
 						DimensionID: "age",
 						Operator:    ">=",
 						Value:       18,
+						Unit:        "years old",
 					},
 				},
 				{
@@ -56,6 +57,7 @@ func SeedStudies() []domain.Study {
 						DimensionID: "age",
 						Operator:    ">",
 						Value:       50,
+						Unit:        "years old",
 					},
 				},
 				{

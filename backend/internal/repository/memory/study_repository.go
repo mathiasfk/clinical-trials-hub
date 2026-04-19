@@ -82,6 +82,19 @@ func (r *StudyRepository) UpdateEligibility(
 	return cloneStudy(study), true, nil
 }
 
+func (r *StudyRepository) Replace(_ context.Context, study domain.Study) (domain.Study, bool, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if _, ok := r.studies[study.ID]; !ok {
+		return domain.Study{}, false, nil
+	}
+
+	r.studies[study.ID] = cloneStudy(study)
+
+	return cloneStudy(study), true, nil
+}
+
 func cloneStudy(study domain.Study) domain.Study {
 	return domain.Study{
 		ID:                study.ID,

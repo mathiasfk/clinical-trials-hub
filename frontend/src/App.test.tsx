@@ -1,352 +1,422 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
+import type { Study } from './types'
+
+const DIMENSIONS = [
+  {
+    id: 'hsCRP',
+    displayName: 'hsCRP',
+    description: 'high-sensitivity C-reactive protein',
+    allowedUnits: ['mg/L'],
+  },
+  {
+    id: 'age',
+    displayName: 'Age',
+    description: 'participant age',
+    allowedUnits: ['years old'],
+  },
+]
+
+const SEED_STUDY: Study = {
+  id: 'study-0001',
+  objectives: ['Assess biomarker response over twelve weeks'],
+  endpoints: ['Reduction in hsCRP at week twelve'],
+  inclusionCriteria: [
+    {
+      description: 'hsCRP above 2 mg/L.',
+      deterministicRule: {
+        dimensionId: 'hsCRP',
+        operator: '>',
+        value: 2,
+        unit: 'mg/L',
+      },
+    },
+  ],
+  exclusionCriteria: [
+    {
+      description: 'Age above 75 years.',
+      deterministicRule: { dimensionId: 'age', operator: '>', value: 75, unit: 'years old' },
+    },
+  ],
+  participants: 120,
+  studyType: 'parallel',
+  numberOfArms: 2,
+  phase: 'Phase II',
+  therapeuticArea: 'Cardiology',
+  patientPopulation: 'Adults with elevated inflammation markers',
+}
 
 const fetchMock = vi.fn()
 
-describe('App', () => {
-  beforeEach(() => {
-    fetchMock.mockReset()
-    window.history.pushState({}, '', '/')
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
 
-    fetchMock.mockResolvedValueOnce(
-      new Response(JSON.stringify({ data: [] }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
+type FetchHandler = (url: string, init?: RequestInit) => Response | Promise<Response>
+
+function installFetch(handler: FetchHandler) {
+  fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    return handler(url, init)
+  })
+}
+
+function defaultHandler(studies: Study[] = [], extra?: Partial<Record<string, FetchHandler>>): FetchHandler {
+  return (url, init) => {
+    if (url === '/api/studies' && (!init || init.method === undefined || init.method === 'GET')) {
+      return jsonResponse({ data: studies })
+    }
+    if (url === '/api/eligibility-dimensions') {
+      return jsonResponse({ data: DIMENSIONS })
+    }
+    if (extra) {
+      for (const [key, handler] of Object.entries(extra)) {
+        if (url === key && handler) {
+          return handler(url, init)
+        }
+      }
+    }
+    throw new Error(`Unexpected request in test: ${init?.method ?? 'GET'} ${url}`)
+  }
+}
+
+async function flush() {
+  await act(async () => {
+    await Promise.resolve()
+  })
+}
+
+beforeEach(() => {
+  fetchMock.mockReset()
+  window.history.pushState({}, '', '/')
+  vi.stubGlobal('fetch', fetchMock)
+})
+
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
+
+describe('All studies view', () => {
+  it('shows only the All studies sidebar section (no Study outline) and a New study button', async () => {
+    installFetch(defaultHandler())
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: /All studies/i, level: 1 })).toBeInTheDocument()
+
+    const allStudiesNav = screen.getByRole('navigation', { name: /All studies/i })
+    expect(allStudiesNav).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: /Study outline/i })).not.toBeInTheDocument()
+
+    const newStudyButton = screen.getByRole('button', { name: /New study/i })
+    expect(newStudyButton.tagName).toBe('BUTTON')
+
+    expect(screen.queryByRole('heading', { name: /Create study/i })).not.toBeInTheDocument()
+
+    fireEvent.click(newStudyButton)
+    await screen.findByRole('heading', { name: /Study information/i })
+    expect(window.location.pathname).toBe('/studies/new/study-information')
+  })
+})
+
+describe('New study wizard', () => {
+  it('shows the Study outline sidebar with an Unpublished draft indicator and a Next button', async () => {
+    installFetch(defaultHandler())
+    window.history.pushState({}, '', '/studies/new/study-information')
+    render(<App />)
+
+    await screen.findByRole('heading', { name: /Study information/i })
+
+    const outlineNav = await screen.findByRole('navigation', { name: /Study outline/i })
+    expect(within(outlineNav).getByText(/Unpublished draft/i)).toBeInTheDocument()
+
+    const nextButton = screen.getByTestId('section-next-button')
+    expect(nextButton).toHaveTextContent(/^Next$/)
+    expect(screen.queryByTestId('section-save-button')).not.toBeInTheDocument()
+  })
+
+  it('blocks advancement and shows inline errors when the Study information form is invalid', async () => {
+    installFetch(defaultHandler())
+    window.history.pushState({}, '', '/studies/new/study-information')
+    render(<App />)
+
+    const nextButton = await screen.findByTestId('section-next-button')
+    fireEvent.click(nextButton)
+
+    expect(await screen.findByText(/Phase is required\./i)).toBeInTheDocument()
+    expect(screen.getByText(/Therapeutic area is required\./i)).toBeInTheDocument()
+    expect(screen.getByText(/Patient population is required\./i)).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/studies/new/study-information')
+  })
+
+  it('advances through the wizard and publishes the draft', async () => {
+    const createdStudy: Study = { ...SEED_STUDY, id: 'study-2001' }
+    installFetch(
+      defaultHandler([], {
+        '/api/studies/study-2001': (_url, init) => {
+          if (init?.method === undefined || init.method === 'GET') {
+            return jsonResponse({ data: createdStudy })
+          }
+          throw new Error('unexpected method on GET route')
+        },
       }),
     )
-    fetchMock.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          data: [
-            {
-              id: 'hsCRP',
-              displayName: 'hsCRP',
-              description: 'high-sensitivity C-reactive protein',
-              allowedUnits: ['mg/L'],
-            },
-            {
-              id: 'age',
-              displayName: 'Age',
-              description: 'participant age',
-              allowedUnits: [],
-            },
-          ],
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      ),
-    )
-
-    vi.stubGlobal('fetch', fetchMock)
-  })
-
-  afterEach(() => {
-    cleanup()
-    vi.unstubAllGlobals()
-  })
-
-  it('renders the all studies home and study creation fields', async () => {
-    render(<App />)
-
-    expect(await screen.findByRole('heading', { name: /All studies/i })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /Create study/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Refresh studies/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Refresh dimensions/i })).toBeInTheDocument()
-    expect(screen.getByLabelText(/Objectives/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/Endpoints/i)).toBeInTheDocument()
-    expect(screen.getAllByLabelText(/Readable description/i)).toHaveLength(2)
-    expect(screen.getAllByLabelText(/Dimension/i)).toHaveLength(2)
-    expect(screen.getAllByLabelText(/Operator/i)).toHaveLength(2)
-    expect(screen.getAllByLabelText(/Value/i)).toHaveLength(2)
-    expect(screen.getByLabelText(/Number of participants/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/^Study type$/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/Number of arms/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/^Phase$/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/Therapeutic area/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/Patient population/i)).toBeInTheDocument()
-  })
-
-  it('submits a complete study registration payload', async () => {
-    fetchMock.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          data: {
-            id: 'study-1234',
-            objectives: ['Primary objective'],
-            endpoints: ['Primary endpoint'],
-            inclusionCriteria: [
-              {
-                description: 'Require hsCRP above 2 mg/L.',
-                deterministicRule: {
-                  dimensionId: 'hsCRP',
-                  operator: '>',
-                  value: 2,
-                  unit: 'mg/L',
-                },
-              },
-            ],
-            exclusionCriteria: [
-              {
-                description: 'Exclude participants older than 70.',
-                deterministicRule: {
-                  dimensionId: 'age',
-                  operator: '>',
-                  value: 70,
-                },
-              },
-            ],
-            participants: 100,
-            studyType: 'parallel',
-            numberOfArms: 2,
-            phase: 'Phase II',
-            therapeuticArea: 'Oncology',
-            patientPopulation: 'Adults',
-          },
-        }),
-        {
-          status: 201,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      ),
-    )
-    fetchMock.mockResolvedValueOnce(
-      new Response(
-        JSON.stringify({
-          data: {
-            id: 'study-1234',
-            objectives: ['Primary objective'],
-            endpoints: ['Primary endpoint'],
-            inclusionCriteria: [
-              {
-                description: 'Require hsCRP above 2 mg/L.',
-                deterministicRule: {
-                  dimensionId: 'hsCRP',
-                  operator: '>',
-                  value: 2,
-                  unit: 'mg/L',
-                },
-              },
-            ],
-            exclusionCriteria: [
-              {
-                description: 'Exclude participants older than 70.',
-                deterministicRule: {
-                  dimensionId: 'age',
-                  operator: '>',
-                  value: 70,
-                },
-              },
-            ],
-            participants: 100,
-            studyType: 'parallel',
-            numberOfArms: 2,
-            phase: 'Phase II',
-            therapeuticArea: 'Oncology',
-            patientPopulation: 'Adults',
-          },
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        },
-      ),
-    )
-
-    render(<App />)
-
-    fireEvent.change(await screen.findByLabelText(/Objectives/i), {
-      target: { value: 'Primary objective' },
-    })
-    fireEvent.change(screen.getByLabelText(/Endpoints/i), {
-      target: { value: 'Primary endpoint' },
-    })
-    fireEvent.change(screen.getAllByLabelText(/Readable description/i)[0], {
-      target: { value: 'Require hsCRP above 2 mg/L.' },
-    })
-    fireEvent.change(screen.getAllByLabelText(/Dimension/i)[0], {
-      target: { value: 'hsCRP' },
-    })
-    fireEvent.change(screen.getAllByLabelText(/Value/i)[0], {
-      target: { value: '2' },
-    })
-    fireEvent.change(screen.getAllByLabelText(/Readable description/i)[1], {
-      target: { value: 'Exclude participants older than 70.' },
-    })
-    fireEvent.change(screen.getAllByLabelText(/Dimension/i)[1], {
-      target: { value: 'age' },
-    })
-    fireEvent.change(screen.getAllByLabelText(/Value/i)[1], {
-      target: { value: '70' },
-    })
-    fireEvent.change(screen.getByLabelText(/Number of participants/i), {
-      target: { value: '100' },
-    })
-    fireEvent.change(screen.getByLabelText(/Number of arms/i), {
-      target: { value: '2' },
-    })
-    fireEvent.change(screen.getByLabelText(/^Phase$/i), {
-      target: { value: 'Phase II' },
-    })
-    fireEvent.change(screen.getByLabelText(/Therapeutic area/i), {
-      target: { value: 'Oncology' },
-    })
-    fireEvent.change(screen.getByLabelText(/Patient population/i), {
-      target: { value: 'Adults' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: /Create study/i }))
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/studies',
-        expect.objectContaining({
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      )
-    })
-
-    const postCall = fetchMock.mock.calls.find(
-      (call) => call[0] === '/api/studies' && (call[1] as RequestInit | undefined)?.method === 'POST',
-    )
-    if (!postCall) {
-      throw new Error('POST /api/studies was not called')
-    }
-
-    const body = JSON.parse((postCall[1] as RequestInit).body as string) as Record<string, unknown>
-    expect(body).toMatchObject({
-      objectives: ['Primary objective'],
-      endpoints: ['Primary endpoint'],
-      inclusionCriteria: [
-        {
-          description: 'Require hsCRP above 2 mg/L.',
-          deterministicRule: {
-            dimensionId: 'hsCRP',
-            operator: '>',
-            value: 2,
-            unit: 'mg/L',
-          },
-        },
-      ],
-      exclusionCriteria: [
-        {
-          description: 'Exclude participants older than 70.',
-          deterministicRule: {
-            dimensionId: 'age',
-            operator: '>',
-            value: 70,
-          },
-        },
-      ],
-      participants: 100,
-      studyType: 'parallel',
-      numberOfArms: 2,
-      phase: 'Phase II',
-      therapeuticArea: 'Oncology',
-      patientPopulation: 'Adults',
-    })
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/studies/study-1234')
-    })
-    expect(window.location.pathname).toBe('/studies/study-1234/summary')
-  })
-
-  it('loads the study summary route without repeated refetch loops', async () => {
-    window.history.pushState({}, '', '/studies/study-0002/summary')
-
-    fetchMock.mockReset()
-    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
-      if (url === '/api/studies') {
-        return new Response(JSON.stringify({ data: [] }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        })
+      const method = init?.method ?? 'GET'
+      if (url === '/api/studies' && method === 'GET') {
+        return jsonResponse({ data: [] })
       }
-
       if (url === '/api/eligibility-dimensions') {
-        return new Response(
-          JSON.stringify({
-            data: [
-              {
-                id: 'hsCRP',
-                displayName: 'hsCRP',
-                description: 'high-sensitivity C-reactive protein',
-                allowedUnits: ['mg/L'],
-              },
-              {
-                id: 'age',
-                displayName: 'Age',
-                description: 'participant age',
-                allowedUnits: [],
-              },
-            ],
-          }),
-          {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          },
-        )
+        return jsonResponse({ data: DIMENSIONS })
       }
-
-      if (url === '/api/studies/study-0002') {
-        return new Response(
-          JSON.stringify({
-            data: {
-              id: 'study-0002',
-              objectives: ['Assess biomarker response'],
-              endpoints: ['Biomarker reduction at week 12'],
-              inclusionCriteria: [
-                {
-                  description: 'hsCRP above 2 mg/L.',
-                  deterministicRule: {
-                    dimensionId: 'hsCRP',
-                    operator: '>',
-                    value: 2,
-                    unit: 'mg/L',
-                  },
-                },
-              ],
-              exclusionCriteria: [
-                {
-                  description: 'Age above 75 years.',
-                  deterministicRule: {
-                    dimensionId: 'age',
-                    operator: '>',
-                    value: 75,
-                  },
-                },
-              ],
-              participants: 120,
-              studyType: 'parallel',
-              numberOfArms: 2,
-              phase: 'Phase II',
-              therapeuticArea: 'Cardiology',
-              patientPopulation: 'Adults with elevated inflammation markers',
-            },
-          }),
-          {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          },
-        )
+      if (url === '/api/studies' && method === 'POST') {
+        return jsonResponse({ data: createdStudy }, 201)
       }
-
-      throw new Error(`Unexpected request in test: ${url}`)
+      if (url === '/api/studies/study-2001' && method === 'GET') {
+        return jsonResponse({ data: createdStudy })
+      }
+      throw new Error(`Unexpected request: ${method} ${url}`)
     })
 
+    window.history.pushState({}, '', '/studies/new/study-information')
     render(<App />)
 
-    expect(await screen.findByRole('heading', { name: /Summary/i })).toBeInTheDocument()
-    expect(screen.queryByText(/Loading study summary/i)).not.toBeInTheDocument()
+    await screen.findByRole('heading', { name: /Study information/i })
+
+    fireEvent.change(screen.getByLabelText(/^Phase$/i), { target: { value: 'Phase II' } })
+    fireEvent.change(screen.getByLabelText(/Therapeutic area/i), { target: { value: 'Oncology' } })
+    fireEvent.change(screen.getByLabelText(/Patient population/i), { target: { value: 'Adults' } })
+    fireEvent.change(screen.getByLabelText(/Number of participants/i), { target: { value: '100' } })
+    fireEvent.change(screen.getByLabelText(/Number of arms/i), { target: { value: '2' } })
+    fireEvent.click(screen.getByTestId('section-next-button'))
+
+    await screen.findByRole('heading', { name: /^Objectives$/i })
+    fireEvent.change(screen.getByLabelText(/Objective 1/i), {
+      target: { value: 'Evaluate biomarker response in the study' },
+    })
+    fireEvent.click(screen.getByTestId('section-next-button'))
+
+    await screen.findByRole('heading', { name: /^Endpoints$/i })
+    fireEvent.change(screen.getByLabelText(/Endpoint 1/i), {
+      target: { value: 'Reduction in hsCRP by week twelve' },
+    })
+    fireEvent.click(screen.getByTestId('section-next-button'))
+
+    await screen.findByRole('heading', { name: /Eligibility criteria/i })
+    const descriptions = screen.getAllByLabelText(/Readable description/i)
+    const dimensions = screen.getAllByLabelText(/^Dimension$/i)
+    const values = screen.getAllByLabelText(/^Value$/i)
+
+    fireEvent.change(descriptions[0], { target: { value: 'Elevated hsCRP' } })
+    fireEvent.change(values[0], { target: { value: '2' } })
+
+    fireEvent.change(dimensions[1], { target: { value: 'age' } })
+    fireEvent.change(descriptions[1], { target: { value: 'Advanced age' } })
+    fireEvent.change(values[1], { target: { value: '75' } })
+
+    fireEvent.click(screen.getByTestId('section-next-button'))
+
+    await screen.findByRole('heading', { name: /^Summary$/i })
+    expect(screen.queryByTestId(/^edit-/)).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('publish-button'))
 
     await waitFor(() => {
-      const studyRequests = fetchMock.mock.calls.filter((call) => call[0] === '/api/studies/study-0002')
-      expect(studyRequests).toHaveLength(1)
+      const postCall = fetchMock.mock.calls.find(
+        ([url, init]) =>
+          String(url) === '/api/studies' &&
+          (init as RequestInit | undefined)?.method === 'POST',
+      )
+      expect(postCall).toBeDefined()
     })
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/studies/study-2001/summary')
+    })
+  })
+
+  it('blocks Publish when any section is invalid and links to the first incomplete section', async () => {
+    installFetch(defaultHandler())
+    window.history.pushState({}, '', '/studies/new/summary')
+    render(<App />)
+
+    await screen.findByRole('heading', { name: /^Summary$/i })
+    fireEvent.click(screen.getByTestId('publish-button'))
+
+    const incompleteHeading = await screen.findByRole('heading', { name: /Incomplete sections/i })
+    const incompleteSection = incompleteHeading.parentElement
+    expect(incompleteSection).not.toBeNull()
+    const firstLink = within(incompleteSection as HTMLElement).getAllByRole('link')[0]
+    expect(firstLink).toHaveAttribute('href', '/studies/new/study-information')
+
+    fireEvent.click(firstLink)
+    await screen.findByRole('heading', { name: /Study information/i })
+    expect(window.location.pathname).toBe('/studies/new/study-information')
+
+    const postCalls = fetchMock.mock.calls.filter(
+      ([url, init]) =>
+        String(url) === '/api/studies' &&
+        (init as RequestInit | undefined)?.method === 'POST',
+    )
+    expect(postCalls).toHaveLength(0)
+  })
+
+  it('opens the discard modal, keeps the draft on cancel and clears it on confirm', async () => {
+    installFetch(defaultHandler())
+    window.history.pushState({}, '', '/studies/new/summary')
+    render(<App />)
+
+    await screen.findByRole('heading', { name: /^Summary$/i })
+    fireEvent.click(screen.getByTestId('discard-button'))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveTextContent(/Discard new study/i)
+
+    fireEvent.click(within(dialog).getByRole('button', { name: /Keep draft/i }))
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+    expect(window.location.pathname).toBe('/studies/new/summary')
+
+    fireEvent.click(screen.getByTestId('discard-button'))
+    const dialogAgain = await screen.findByRole('dialog')
+    fireEvent.click(within(dialogAgain).getByRole('button', { name: /Discard draft/i }))
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe('/studies')
+    })
+  })
+})
+
+describe('Edit study summary', () => {
+  function editHandler(study: Study): FetchHandler {
+    return (url, init) => {
+      const method = init?.method ?? 'GET'
+      if (url === '/api/studies' && method === 'GET') {
+        return jsonResponse({ data: [study] })
+      }
+      if (url === '/api/eligibility-dimensions') {
+        return jsonResponse({ data: DIMENSIONS })
+      }
+      if (url === `/api/studies/${study.id}` && method === 'GET') {
+        return jsonResponse({ data: study })
+      }
+      throw new Error(`Unexpected request: ${method} ${url}`)
+    }
+  }
+
+  it('renders read-only summary cards with pencil edit links and no Publish/Discard', async () => {
+    installFetch(editHandler(SEED_STUDY))
+    window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/summary`)
+    render(<App />)
+
+    await screen.findByRole('heading', { name: /^Summary$/i })
+    await flush()
+
+    expect(screen.queryByTestId('publish-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('discard-button')).not.toBeInTheDocument()
+
+    const editInfo = screen.getByRole('link', { name: /Edit Study information/i })
+    expect(editInfo).toHaveAttribute('href', `/studies/${SEED_STUDY.id}/study-information`)
+
+    const editEligibility = screen.getByRole('link', { name: /Edit Eligibility criteria/i })
+    expect(editEligibility).toHaveAttribute('href', `/studies/${SEED_STUDY.id}/eligibility`)
+
+    const summaryCards = screen.getAllByRole('heading', { level: 3 })
+    const eligibilityCardTitle = summaryCards.find(
+      (heading) => heading.textContent === 'Eligibility criteria',
+    )
+    expect(eligibilityCardTitle).toBeDefined()
+    const eligibilityCard = eligibilityCardTitle!.closest('section')
+    expect(eligibilityCard).not.toBeNull()
+    expect(within(eligibilityCard as HTMLElement).getByText(/hsCRP above 2 mg\/L/i)).toBeInTheDocument()
+    expect(within(eligibilityCard as HTMLElement).queryByText(/Rule preview/i)).not.toBeInTheDocument()
+  })
+
+  it('shows a Save button (not Next) on the edit-mode Study information screen', async () => {
+    installFetch(editHandler(SEED_STUDY))
+    window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/study-information`)
+    render(<App />)
+
+    await screen.findByRole('heading', { name: /Study information/i })
+
+    const saveButton = await screen.findByTestId('section-save-button')
+    expect(saveButton).toHaveTextContent(/^Save$/)
+    expect(screen.queryByTestId('section-next-button')).not.toBeInTheDocument()
+  })
+
+  it('blocks Save with inline errors when the study information is invalid', async () => {
+    installFetch(editHandler(SEED_STUDY))
+    window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/study-information`)
+    render(<App />)
+
+    const saveButton = await screen.findByTestId('section-save-button')
+    fireEvent.change(screen.getByLabelText(/^Phase$/i), { target: { value: '' } })
+    fireEvent.click(saveButton)
+
+    expect(await screen.findByText(/Phase is required\./i)).toBeInTheDocument()
+    const putCalls = fetchMock.mock.calls.filter(
+      ([, init]) => (init as RequestInit | undefined)?.method === 'PUT',
+    )
+    expect(putCalls).toHaveLength(0)
+  })
+
+  it('sends a PUT /api/studies/:id request on Save when the form is valid', async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      const method = init?.method ?? 'GET'
+      if (url === '/api/studies' && method === 'GET') {
+        return jsonResponse({ data: [SEED_STUDY] })
+      }
+      if (url === '/api/eligibility-dimensions') {
+        return jsonResponse({ data: DIMENSIONS })
+      }
+      if (url === `/api/studies/${SEED_STUDY.id}` && method === 'GET') {
+        return jsonResponse({ data: SEED_STUDY })
+      }
+      if (url === `/api/studies/${SEED_STUDY.id}` && method === 'PUT') {
+        const updated = { ...SEED_STUDY, phase: 'Phase III' }
+        return jsonResponse({ data: updated })
+      }
+      throw new Error(`Unexpected request: ${method} ${url}`)
+    })
+
+    window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/study-information`)
+    render(<App />)
+
+    const phaseInput = await screen.findByLabelText(/^Phase$/i)
+    await waitFor(() => {
+      expect((phaseInput as HTMLInputElement).value).toBe('Phase II')
+    })
+
+    fireEvent.change(phaseInput, { target: { value: 'Phase III' } })
+    fireEvent.click(screen.getByTestId('section-save-button'))
+
+    await waitFor(() => {
+      const putCall = fetchMock.mock.calls.find(
+        ([url, init]) =>
+          String(url) === `/api/studies/${SEED_STUDY.id}` &&
+          (init as RequestInit | undefined)?.method === 'PUT',
+      )
+      expect(putCall).toBeDefined()
+      const body = JSON.parse(((putCall![1] as RequestInit).body as string)) as Record<string, unknown>
+      expect(body.phase).toBe('Phase III')
+    })
+
+    await screen.findByText(/Study information saved\./i)
   })
 })

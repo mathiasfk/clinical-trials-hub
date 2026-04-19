@@ -1,40 +1,4 @@
-# study-registration Specification
-
-## Purpose
-TBD - created by archiving change init-mvp-react-go-inmemory. Update Purpose after archive.
-## Requirements
-### Requirement: Users can register clinical studies with required MVP fields
-The system SHALL allow users to create a clinical study registration record containing objectives, endpoints, inclusion and exclusion criteria, number of participants, study type, number of arms, phase, therapeutic area, and patient population.
-
-#### Scenario: User creates a study with complete registration data
-- **WHEN** the user submits a study registration payload with all required MVP fields
-- **THEN** the system SHALL persist the study record and return the created study representation
-
-#### Scenario: User submits incomplete study registration data
-- **WHEN** the user submits a study registration payload missing one or more required MVP fields
-- **THEN** the system SHALL reject the request with validation errors describing missing or invalid fields
-
-### Requirement: Study registration supports structured criteria and endpoint lists
-The system MUST support multiple objectives, endpoints, inclusion criteria, and exclusion criteria per study, and eligibility criteria MUST be stored as ordered structured collections rather than free-form strings.
-
-#### Scenario: User submits multiple objectives and endpoints
-- **WHEN** the user includes multiple objective and endpoint entries in the registration payload
-- **THEN** the system SHALL store and return them as ordered collections associated with the study
-
-#### Scenario: User submits multiple inclusion and exclusion criteria
-- **WHEN** the user includes multiple inclusion and exclusion criteria in the registration payload
-- **THEN** the system SHALL store and return them as separate ordered structured collections associated with the study
-
-### Requirement: Users can retrieve registered studies
-The system SHALL provide read access for registered studies for MVP verification and usage, including the structured eligibility criteria and the metadata needed to navigate study workspaces.
-
-#### Scenario: User lists studies
-- **WHEN** the user requests the study list endpoint
-- **THEN** the system SHALL return all registered studies available in the current runtime
-
-#### Scenario: User retrieves a single study by identifier
-- **WHEN** the user requests a specific study by ID
-- **THEN** the system SHALL return the matching study with its structured eligibility criteria if it exists, or a not-found response otherwise
+## MODIFIED Requirements
 
 ### Requirement: Users can navigate studies from an All studies home
 The system SHALL present `All studies` as the default landing view for the application, list all registered studies with basic summary information needed for selection, and provide an explicit action to start registering a new study.
@@ -85,34 +49,7 @@ The system SHALL render `Summary` as a read-only view for existing studies that 
 - **WHEN** the user views the `Eligibility criteria` card on `Summary`
 - **THEN** the card SHALL show inclusion and exclusion criteria as a list of readable descriptions only and SHALL expose a pencil icon that navigates to the full `Eligibility criteria` screen
 
-### Requirement: Eligibility criteria use deterministic structured rules
-The system SHALL store inclusion and exclusion criteria as ordered structured collections where each criterion contains a readable description and a deterministic rule with `dimensionId`, `operator`, `value`, and optional `unit`.
-
-#### Scenario: User saves inclusion and exclusion criteria
-- **WHEN** the user submits structured inclusion and exclusion criteria for a study
-- **THEN** the system SHALL persist and return them as ordered collections of structured criteria associated with that study
-
-#### Scenario: User submits a criterion with all rule parts
-- **WHEN** the user submits a criterion with a valid description, dimension identifier, operator, value, and optional unit
-- **THEN** the system SHALL accept the criterion and store it in the study eligibility data
-
-### Requirement: Eligibility dimensions come from a declarative registry
-The system MUST provide supported eligibility dimensions from a declarative registry that includes an identifier, display name, and full description for hover or tooltip content.
-
-#### Scenario: User opens the eligibility criteria editor
-- **WHEN** the user loads the eligibility criteria section
-- **THEN** the system SHALL provide the supported dimensions and their metadata for selection and display
-
-#### Scenario: Team adds a new supported dimension
-- **WHEN** a developer adds a new dimension entry to the registry
-- **THEN** the system SHALL make that dimension available to validation and UI rendering without requiring rule-specific code changes
-
-### Requirement: Application starts with mock study data
-The system MUST seed deterministic mock study data at application startup to support demos and local testing.
-
-#### Scenario: Backend starts with seeded records
-- **WHEN** the backend service starts
-- **THEN** at least one mock clinical study SHALL be available through the read endpoints without requiring prior manual creation
+## ADDED Requirements
 
 ### Requirement: Dedicated section screens own editing with mode-specific footer action
 The system SHALL provide a dedicated screen for each of `Study information`, `Objectives`, `Endpoints`, and `Eligibility criteria`, each allowing edits and ending with a single primary footer action. The label and behavior of that action SHALL depend on the mode: in edit mode it SHALL be labeled `Save` and persist the changes for the active study; in new-study mode it SHALL be labeled `Next` and advance the wizard without persisting to the backend. The `Save` label SHALL NOT appear in new-study mode, and the `Next` label SHALL NOT appear in edit mode.
@@ -228,4 +165,3 @@ The system SHALL re-run the minimum-validity contract against every section of t
 #### Scenario: User reaches Summary via the sidebar without completing sections
 - **WHEN** the user jumps directly to the new-study `Summary` via the sidebar without filling every upstream section
 - **THEN** the system SHALL still present the `Publish` button, and activating `Publish` SHALL trigger the full-draft re-validation that blocks submission until the incomplete sections are fixed
-
