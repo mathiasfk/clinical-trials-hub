@@ -5,25 +5,22 @@ Trials Hub POC and the reasoning behind them. The goal is to make the
 trade-offs explicit so reviewers can evaluate the implementation against the
 constraints of a short-lived prototype.
 
-## 1. Why the "Study Registration" module was chosen
+## 1. Why the "Study Design" module was chosen
 
-The feature surface sketched in [`docs/features-outline.md`](./features-outline.md)
-covers several modules (study registration, study information, SOA validation,
-similar studies, insights, AI assistant, decision log). Among them, the
-**Study Registration** slice — objectives, endpoints, I/E criteria, number of
-participants, study type, number of arms, phase, therapeutic area and patient
-population — was the one with the richest amount of information in the
-material I had access to.
+In the materials I had access to I could have a basic idea of how several modules work (Study Design, Country Allocation, Site Selection, Study Start-up, Study Execution, Resource Management and Cost Management).
+Among them, the
+**Study Design** was the one with the richest amount of information visible: objectives, endpoints, I/E criteria, number of participants, study type, number of arms, phase, therapeutic area and patient
+population.
 
-That richness made it possible to infer product behaviour end-to-end:
-vocabulary for closed fields (phases, therapeutic areas, study types),
-validation rules (minimum eligibility, required registration fields), and
-meaningful interactions (the StudyHub assistant operating on top of the
+That made it possible to infer product behaviour end-to-end:
+vocabulary for input fields,
+validation rules, and
+meaningful interactions (for example, the StudyHub assistant operating on top of the
 registered catalog).
 
 Other modules had interesting visual
 hooks but not enough detail for me to reconstruct their behaviour with
-confidence. Picking study registration allowed the POC to go deep on a single
+confidence. Picking Study Design allowed the POC to go deep on a single
 coherent flow instead of going shallow across many.
 
 ## 2. Why Go on the backend
