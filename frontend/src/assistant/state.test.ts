@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { EligibilityCriterion, Study } from '../types'
 import { ELIGIBILITY_SKILLS } from './skills'
 import { createInitialState, reducer } from './state'
-import type { AssistantContext, AssistantTurn, CriterionGroup } from './types'
+import type { AssistantContext, AssistantTurn } from './types'
 
 function criterion(
   description: string,
@@ -110,7 +110,7 @@ describe('copy-from-study flow', () => {
     return makeContext({
       otherStudies: [
         study({
-          id: 'study-b',
+          id: 'study-0003',
           therapeuticArea: 'Cardiovascular',
           phase: 'Phase 2',
           inclusionCriteria: [hsCrp],
@@ -120,7 +120,7 @@ describe('copy-from-study flow', () => {
     })
   }
 
-  it('progresses intro → study picker → criterion picker → acknowledgement', () => {
+  it('progresses intro → reference id prompt → criterion picker → acknowledgement', () => {
     let state = createInitialState(ELIGIBILITY_SKILLS)
     const context = contextWithOthers()
 
@@ -129,13 +129,15 @@ describe('copy-from-study flow', () => {
       optionId: 'copy-from-study',
       context,
     })
+    expect(state.awaitingReferenceStudyId).toBe(true)
     let menu = lastMenuOptions(state.thread)
-    expect(menu.some((option) => option.id === 'study:study-b')).toBe(true)
+    expect(menu.map((option) => option.id)).toEqual(['back-to-main'])
 
     state = reducer(state, {
-      type: 'SELECT_OPTION',
-      optionId: 'study:study-b',
+      type: 'REFERENCE_STUDY_RESOLVED',
       context,
+      studyId: 'study-0003',
+      userLabel: 'study-0003',
     })
     menu = lastMenuOptions(state.thread)
     expect(menu.find((option) => option.label.includes('hsCRP'))).toBeDefined()
@@ -144,7 +146,7 @@ describe('copy-from-study flow', () => {
     expect(menu.some((option) => option.id === 'back-to-main')).toBe(true)
 
     const inclusionOption = menu.find((option) =>
-      option.id.startsWith('criterion:study-b:inclusion'),
+      option.id.startsWith('criterion:study-0003:inclusion'),
     )
     expect(inclusionOption).toBeDefined()
 
@@ -165,18 +167,19 @@ describe('copy-from-study flow', () => {
     expect(menu.find((option) => option.label.includes('Age above 75'))).toBeDefined()
   })
 
-  it('emits a no-other-studies bot turn when otherStudies is empty', () => {
+  it('shows the reference study id prompt when otherStudies is empty', () => {
     let state = createInitialState(ELIGIBILITY_SKILLS)
     state = reducer(state, {
       type: 'SELECT_OPTION',
       optionId: 'copy-from-study',
       context: makeContext(),
     })
+    expect(state.awaitingReferenceStudyId).toBe(true)
     const menu = lastMenuOptions(state.thread)
     expect(menu).toHaveLength(1)
     expect(menu[0].id).toBe('back-to-main')
     const lastText = state.thread.findLast((turn) => turn.kind === 'bot-text')
-    expect(lastText?.kind === 'bot-text' && lastText.text).toMatch(/No other studies/i)
+    expect(lastText?.kind === 'bot-text' && lastText.text).toMatch(/Type its study id/i)
   })
 
   it('returns to the root menu when Back to main menu is activated', () => {
@@ -216,7 +219,7 @@ describe('suggest-relevant-criteria flow', () => {
           exclusionCriteria: [suggestedB],
         }),
         study({
-          id: 'study-b',
+          id: 'study-0004',
           therapeuticArea: 'Oncology',
           phase: 'Phase 3',
           inclusionCriteria: [suggestedC, unused],
@@ -235,7 +238,7 @@ describe('suggest-relevant-criteria flow', () => {
     expect(suggestOptions).toHaveLength(3)
     expect(suggestOptions[0].id).toBe('suggest:study-a:inclusion:0')
     expect(suggestOptions[1].id).toBe('suggest:study-a:exclusion:0')
-    expect(suggestOptions[2].id).toBe('suggest:study-b:inclusion:0')
+    expect(suggestOptions[2].id).toBe('suggest:study-0004:inclusion:0')
 
     state = reducer(state, {
       type: 'SELECT_OPTION',

@@ -1,4 +1,4 @@
-import type { EligibilityCriterion, Study } from '../types'
+import type { EligibilityCriterion } from '../types'
 import {
   collectSuggestions,
   filterCopyableCriteria,
@@ -20,6 +20,8 @@ export interface AssistantState {
   thread: AssistantTurn[]
   prompt: AssistantPrompt
   loadError: string | null
+  /** When true, the dock enables the footer text field for reference study id entry. */
+  awaitingReferenceStudyId: boolean
 }
 
 export type ReducerAction =
@@ -27,6 +29,13 @@ export type ReducerAction =
   | { type: 'CLEAR_CHAT'; skills: SkillDefinition[] }
   | { type: 'SET_LOAD_ERROR'; message: string }
   | { type: 'CLEAR_LOAD_ERROR' }
+  | {
+      type: 'REFERENCE_STUDY_RESOLVED'
+      context: AssistantContext
+      studyId: string
+      userLabel: string
+    }
+  | { type: 'REFERENCE_STUDY_LOOKUP_FAILED'; userLabel: string; message: string }
 
 let sequentialId = 0
 function nextId(prefix: string): string {
@@ -71,6 +80,7 @@ export function createInitialState(skills: SkillDefinition[] = ELIGIBILITY_SKILL
     ],
     prompt,
     loadError: null,
+    awaitingReferenceStudyId: false,
   }
 }
 
@@ -116,17 +126,6 @@ const BACK_TO_MAIN_OPTION = (): MenuOption => ({
   action: { type: 'BACK_TO_MAIN' },
 })
 
-function studyLabel(study: Study): string {
-  const parts: string[] = []
-  if (study.therapeuticArea) {
-    parts.push(study.therapeuticArea)
-  }
-  if (study.phase) {
-    parts.push(study.phase)
-  }
-  return parts.length ? `${study.id} — ${parts.join(', ')}` : study.id
-}
-
 function criterionLabel(criterion: EligibilityCriterion, group: CriterionGroup): string {
   const prefix = group === 'inclusion' ? 'Inclusion' : 'Exclusion'
   const description = criterion.description.trim() || '(unnamed criterion)'
@@ -163,7 +162,7 @@ function resolveAction(
         rootOptions,
         'What would you like to do?',
       )
-      return { ...state, thread, prompt }
+      return { ...state, thread, prompt, awaitingReferenceStudyId: false }
     }
 
     case 'START_COPY_FROM_STUDY':
@@ -176,7 +175,7 @@ function resolveAction(
       return showCriteriaOfStudy(state, context, threadWithUser, action.studyId)
 
     case 'PICK_ANOTHER_STUDY':
-      return showStudyPicker(state, context, threadWithUser)
+      return showReferenceStudyIdPrompt(state, threadWithUser)
 
     case 'COPY_CRITERION':
       return acknowledgeCopy(state, context, threadWithUser, action)
@@ -201,7 +200,7 @@ function resolveAction(
         ],
         [BACK_TO_MAIN_OPTION()],
       )
-      return { ...state, thread, prompt }
+      return { ...state, thread, prompt, awaitingReferenceStudyId: false }
     }
 
     default:
@@ -209,71 +208,45 @@ function resolveAction(
   }
 }
 
+function showReferenceStudyIdPrompt(
+  state: AssistantState,
+  threadWithUser: AssistantTurn[],
+  opts?: {
+    preamble?: string[]
+    leadingMenuOptions?: MenuOption[]
+  },
+): AssistantState {
+  const lines =
+    opts?.preamble ?? [
+      'Which study should we copy criteria from? Type its study id in the box below (for example study-0002) and press Enter.',
+    ]
+  const texts: AssistantTurn[] = lines.map((text) => ({
+    kind: 'bot-text' as const,
+    id: nextId('turn'),
+    text,
+  }))
+  const options: MenuOption[] = [...(opts?.leadingMenuOptions ?? []), BACK_TO_MAIN_OPTION()]
+  const { thread, prompt } = appendBotTurns(threadWithUser, texts, options)
+  return { ...state, thread, prompt, awaitingReferenceStudyId: true }
+}
+
 function startCopyFromStudy(
   state: AssistantState,
-  context: AssistantContext,
+  _context: AssistantContext,
   threadWithUser: AssistantTurn[],
 ): AssistantState {
   if (state.loadError) {
-    const { thread, prompt } = appendBotTurns(
-      threadWithUser,
-      [
-        {
-          kind: 'bot-text',
-          id: nextId('turn'),
-          text: `I couldn't load the list of other studies: ${state.loadError}`,
-        },
+    return showReferenceStudyIdPrompt(state, threadWithUser, {
+      preamble: [
+        `I couldn't load the list of other studies: ${state.loadError}`,
+        'You can still enter another study’s id in the box below and press Enter, or use Retry.',
       ],
-      [
+      leadingMenuOptions: [
         { id: 'retry', label: 'Retry', action: { type: 'RETRY_LOAD_OTHER_STUDIES' } },
-        BACK_TO_MAIN_OPTION(),
       ],
-    )
-    return { ...state, thread, prompt }
+    })
   }
-  return showStudyPicker(state, context, threadWithUser)
-}
-
-function showStudyPicker(
-  state: AssistantState,
-  context: AssistantContext,
-  threadWithUser: AssistantTurn[],
-): AssistantState {
-  const { otherStudies } = context
-  if (otherStudies.length === 0) {
-    const { thread, prompt } = appendBotTurns(
-      threadWithUser,
-      [
-        {
-          kind: 'bot-text',
-          id: nextId('turn'),
-          text: 'No other studies to compare with yet. Add more studies to this workspace and try again.',
-        },
-      ],
-      [BACK_TO_MAIN_OPTION()],
-    )
-    return { ...state, thread, prompt }
-  }
-
-  const options: MenuOption[] = otherStudies.map((study) => ({
-    id: `study:${study.id}`,
-    label: studyLabel(study),
-    action: { type: 'PICK_STUDY', studyId: study.id },
-  }))
-  options.push(BACK_TO_MAIN_OPTION())
-
-  const { thread, prompt } = appendBotTurns(
-    threadWithUser,
-    [
-      {
-        kind: 'bot-text',
-        id: nextId('turn'),
-        text: 'Which study would you like to copy criteria from?',
-      },
-    ],
-    options,
-  )
-  return { ...state, thread, prompt }
+  return showReferenceStudyIdPrompt(state, threadWithUser)
 }
 
 function showCriteriaOfStudy(
@@ -302,7 +275,7 @@ function showCriteriaOfStudy(
         BACK_TO_MAIN_OPTION(),
       ],
     )
-    return { ...state, thread, prompt }
+    return { ...state, thread, prompt, awaitingReferenceStudyId: false }
   }
 
   const { inclusion, exclusion } = filterCopyableCriteria(context.currentStudy, study)
@@ -348,7 +321,7 @@ function showCriteriaOfStudy(
     [{ kind: 'bot-text', id: nextId('turn'), text: introText }],
     options,
   )
-  return { ...state, thread, prompt }
+  return { ...state, thread, prompt, awaitingReferenceStudyId: false }
 }
 
 function acknowledgeCopy(
@@ -359,7 +332,7 @@ function acknowledgeCopy(
 ): AssistantState {
   const study = context.otherStudies.find((candidate) => candidate.id === action.studyId)
   if (!study) {
-    return showStudyPicker(state, context, threadWithUser)
+    return showReferenceStudyIdPrompt(state, threadWithUser)
   }
   const list =
     action.group === 'inclusion' ? study.inclusionCriteria : study.exclusionCriteria
@@ -422,7 +395,7 @@ function startSuggestRelevant(
         BACK_TO_MAIN_OPTION(),
       ],
     )
-    return { ...state, thread, prompt }
+    return { ...state, thread, prompt, awaitingReferenceStudyId: false }
   }
 
   if (context.otherStudies.length === 0) {
@@ -437,7 +410,7 @@ function startSuggestRelevant(
       ],
       [BACK_TO_MAIN_OPTION()],
     )
-    return { ...state, thread, prompt }
+    return { ...state, thread, prompt, awaitingReferenceStudyId: false }
   }
 
   const ranked = rankStudies(context.currentStudy, context.otherStudies)
@@ -455,7 +428,7 @@ function startSuggestRelevant(
       ],
       [BACK_TO_MAIN_OPTION()],
     )
-    return { ...state, thread, prompt }
+    return { ...state, thread, prompt, awaitingReferenceStudyId: false }
   }
 
   const options: MenuOption[] = suggestions.map((suggestion) => ({
@@ -483,7 +456,7 @@ function startSuggestRelevant(
     [{ kind: 'bot-text', id: nextId('turn'), text: headerText }],
     options,
   )
-  return { ...state, thread, prompt }
+  return { ...state, thread, prompt, awaitingReferenceStudyId: false }
 }
 
 function acknowledgeSuggestion(
@@ -520,7 +493,7 @@ function acknowledgeSuggestion(
     ],
     'What next?',
   )
-  return { ...state, thread, prompt }
+  return { ...state, thread, prompt, awaitingReferenceStudyId: false }
 }
 
 export function reducer(state: AssistantState, action: ReducerAction): AssistantState {
@@ -531,6 +504,21 @@ export function reducer(state: AssistantState, action: ReducerAction): Assistant
         return state
       }
       return resolveAction(state, action.context, option.action, option.label)
+    }
+    case 'REFERENCE_STUDY_RESOLVED': {
+      const threadWithDisabled = disableMenusInThread(state.thread)
+      const threadWithUser = appendUserTurn(threadWithDisabled, action.userLabel)
+      return showCriteriaOfStudy(state, action.context, threadWithUser, action.studyId)
+    }
+    case 'REFERENCE_STUDY_LOOKUP_FAILED': {
+      const threadWithDisabled = disableMenusInThread(state.thread)
+      const threadWithUser = appendUserTurn(threadWithDisabled, action.userLabel)
+      const { thread, prompt } = appendBotTurns(
+        threadWithUser,
+        [{ kind: 'bot-text', id: nextId('turn'), text: action.message }],
+        [BACK_TO_MAIN_OPTION()],
+      )
+      return { ...state, thread, prompt, awaitingReferenceStudyId: true }
     }
     case 'CLEAR_CHAT':
       return createInitialState(action.skills)

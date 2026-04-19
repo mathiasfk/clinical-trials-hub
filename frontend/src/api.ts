@@ -6,6 +6,12 @@ import type {
   StudyEligibilityInput,
 } from './types'
 
+function apiUrl(path: string): string {
+  const raw = import.meta.env.VITE_API_URL?.trim() ?? ''
+  const base = raw.replace(/\/$/, '')
+  return base === '' ? path : `${base}${path}`
+}
+
 async function parseResponse<T>(response: Response): Promise<T> {
   const payload = (await response.json()) as T | ApiErrorResponse
   if (!response.ok) {
@@ -16,19 +22,19 @@ async function parseResponse<T>(response: Response): Promise<T> {
 }
 
 export async function listStudies(): Promise<Study[]> {
-  const response = await fetch('/api/studies')
+  const response = await fetch(apiUrl('/api/studies'))
   const payload = await parseResponse<{ data: Study[] }>(response)
   return payload.data
 }
 
 export async function getStudyById(id: string): Promise<Study> {
-  const response = await fetch(`/api/studies/${id}`)
+  const response = await fetch(apiUrl(`/api/studies/${id}`))
   const payload = await parseResponse<{ data: Study }>(response)
   return payload.data
 }
 
 export async function createStudy(input: StudyCreateInput): Promise<Study> {
-  const response = await fetch('/api/studies', {
+  const response = await fetch(apiUrl('/api/studies'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -40,7 +46,7 @@ export async function createStudy(input: StudyCreateInput): Promise<Study> {
 }
 
 export async function replaceStudy(id: string, input: StudyCreateInput): Promise<Study> {
-  const response = await fetch(`/api/studies/${id}`, {
+  const response = await fetch(apiUrl(`/api/studies/${id}`), {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -52,7 +58,7 @@ export async function replaceStudy(id: string, input: StudyCreateInput): Promise
 }
 
 export async function updateStudyEligibility(id: string, input: StudyEligibilityInput): Promise<Study> {
-  const response = await fetch(`/api/studies/${id}/eligibility`, {
+  const response = await fetch(apiUrl(`/api/studies/${id}/eligibility`), {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -64,7 +70,7 @@ export async function updateStudyEligibility(id: string, input: StudyEligibility
 }
 
 export async function listEligibilityDimensions(): Promise<EligibilityDimension[]> {
-  const response = await fetch('/api/eligibility-dimensions')
+  const response = await fetch(apiUrl('/api/eligibility-dimensions'))
   const payload = await parseResponse<{ data: EligibilityDimension[] }>(response)
   return payload.data
 }

@@ -6,8 +6,12 @@ import {
   useRef,
   useState,
 } from 'react'
+import type { KeyboardEvent } from 'react'
 
 import './assistant.css'
+import { getStudyById } from '../api'
+import type { ApiErrorResponse } from '../types'
+import { extractReferenceStudyId } from './referenceStudyId'
 import { ELIGIBILITY_SKILLS } from './skills'
 import { createInitialState, reducer } from './state'
 import type {
@@ -48,13 +52,34 @@ export function AssistantChatDock({
   const changeOpen = useCallback(
     (next: boolean) => {
       setIsOpen(next)
+      if (!next) {
+        setLookupStudies([])
+        setFooterValue('')
+      }
       onOpenChange?.(next)
     },
     [onOpenChange],
   )
   const [state, dispatch] = useReducer(reducer, skills, createInitialState)
+  /** Studies fetched by id for copy-from-study; merged into `effectiveContext` for criterion picks. */
+  const [lookupStudies, setLookupStudies] = useState<Study[]>([])
+  const [footerValue, setFooterValue] = useState('')
+  const referenceSubmitBusyRef = useRef(false)
   const threadBottomRef = useRef<HTMLDivElement | null>(null)
   const firstMenuButtonRef = useRef<HTMLButtonElement | null>(null)
+  const footerInputRef = useRef<HTMLInputElement | null>(null)
+
+  const effectiveContext = useMemo((): AssistantContext => {
+    if (lookupStudies.length === 0) {
+      return context
+    }
+    const seen = new Set(context.otherStudies.map((s) => s.id))
+    const extra = lookupStudies.filter((s) => !seen.has(s.id))
+    if (extra.length === 0) {
+      return context
+    }
+    return { ...context, otherStudies: [...context.otherStudies, ...extra] }
+  }, [context, lookupStudies])
 
   // Push load errors into the reducer so the error path renders inside the
   // thread rather than as a toast or full-screen crash.
@@ -80,13 +105,15 @@ export function AssistantChatDock({
     if (!isOpen) {
       return
     }
-    // Focus the first menu button of the active prompt so keyboard users can
-    // progress without a mouse when a new menu renders.
     const frame = window.requestAnimationFrame(() => {
-      firstMenuButtonRef.current?.focus()
+      if (state.awaitingReferenceStudyId) {
+        footerInputRef.current?.focus()
+      } else {
+        firstMenuButtonRef.current?.focus()
+      }
     })
     return () => window.cancelAnimationFrame(frame)
-  }, [isOpen, state.prompt.id])
+  }, [isOpen, state.prompt.id, state.awaitingReferenceStudyId])
 
   const handleSelectOption = useCallback(
     (option: MenuOption) => {
@@ -94,17 +121,115 @@ export function AssistantChatDock({
       // host's draft, notify the host BEFORE the reducer runs so the next
       // render of `context` reflects the addition. The reducer also runs its
       // local augmentation so the menu renders correctly this tick.
-      runHostSideEffect(option.action, context, onAddCriterion)
-      dispatch({ type: 'SELECT_OPTION', optionId: option.id, context })
+      runHostSideEffect(option.action, effectiveContext, onAddCriterion)
+      dispatch({ type: 'SELECT_OPTION', optionId: option.id, context: effectiveContext })
 
       if (option.action.type === 'RETRY_LOAD_OTHER_STUDIES' && onReloadOtherStudies) {
         onReloadOtherStudies()
       }
     },
-    [context, onAddCriterion, onReloadOtherStudies],
+    [effectiveContext, onAddCriterion, onReloadOtherStudies],
+  )
+
+  const submitReferenceStudyId = useCallback(async () => {
+    if (!state.awaitingReferenceStudyId || referenceSubmitBusyRef.current) {
+      return
+    }
+    const raw = footerValue.trim()
+    if (!raw) {
+      return
+    }
+
+    const extracted = extractReferenceStudyId(raw)
+    if (!extracted) {
+      dispatch({
+        type: 'REFERENCE_STUDY_LOOKUP_FAILED',
+        userLabel: raw,
+        message:
+          'I couldn’t read a study id from that. Try something like study-0002 (letters “study”, a number).',
+      })
+      return
+    }
+
+    if (context.currentStudy.id !== null && extracted === context.currentStudy.id) {
+      dispatch({
+        type: 'REFERENCE_STUDY_LOOKUP_FAILED',
+        userLabel: raw,
+        message: 'You can’t copy criteria from the study you’re editing.',
+      })
+      return
+    }
+
+    const fromList = context.otherStudies.find((s) => s.id === extracted)
+    if (fromList) {
+      setFooterValue('')
+      dispatch({
+        type: 'REFERENCE_STUDY_RESOLVED',
+        context: effectiveContext,
+        studyId: extracted,
+        userLabel: extracted,
+      })
+      return
+    }
+
+    referenceSubmitBusyRef.current = true
+    try {
+      const study = await getStudyById(extracted)
+      if (context.currentStudy.id !== null && study.id === context.currentStudy.id) {
+        dispatch({
+          type: 'REFERENCE_STUDY_LOOKUP_FAILED',
+          userLabel: raw,
+          message: 'You can’t copy criteria from the study you’re editing.',
+        })
+        return
+      }
+      setLookupStudies((prev) => (prev.some((s) => s.id === study.id) ? prev : [...prev, study]))
+      const merged: AssistantContext = context.otherStudies.some((s) => s.id === study.id)
+        ? effectiveContext
+        : { ...context, otherStudies: [...context.otherStudies, study] }
+      setFooterValue('')
+      dispatch({
+        type: 'REFERENCE_STUDY_RESOLVED',
+        context: merged,
+        studyId: extracted,
+        userLabel: extracted,
+      })
+    } catch (caught) {
+      const api = caught as ApiErrorResponse
+      const message =
+        typeof api?.message === 'string' && api.message
+          ? api.message
+          : 'That study could not be loaded. Check the id and try again.'
+      dispatch({
+        type: 'REFERENCE_STUDY_LOOKUP_FAILED',
+        userLabel: raw,
+        message,
+      })
+    } finally {
+      referenceSubmitBusyRef.current = false
+    }
+  }, [
+    context.currentStudy.id,
+    context.otherStudies,
+    effectiveContext,
+    footerValue,
+    state.awaitingReferenceStudyId,
+  ])
+
+  const handleFooterKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      if (event.key !== 'Enter') {
+        return
+      }
+      event.preventDefault()
+      void submitReferenceStudyId()
+    },
+    [submitReferenceStudyId],
   )
 
   const handleClearChat = useCallback(() => {
+    setLookupStudies([])
+    setFooterValue('')
     dispatch({ type: 'CLEAR_CHAT', skills })
   }, [skills])
 
@@ -184,10 +309,22 @@ export function AssistantChatDock({
               📎
             </span>
             <input
+              ref={footerInputRef}
               type="text"
-              placeholder="Ask anything… (not available in MVP)"
-              aria-label="Ask anything (disabled)"
-              disabled
+              value={footerValue}
+              onChange={(e) => setFooterValue(e.target.value)}
+              onKeyDown={handleFooterKeyDown}
+              placeholder={
+                state.awaitingReferenceStudyId
+                  ? 'Study id (e.g. study-0002) — Enter'
+                  : 'Ask anything… (not available in MVP)'
+              }
+              aria-label={
+                state.awaitingReferenceStudyId
+                  ? 'Reference study id'
+                  : 'Ask anything (disabled)'
+              }
+              disabled={!state.awaitingReferenceStudyId}
             />
           </div>
         </aside>

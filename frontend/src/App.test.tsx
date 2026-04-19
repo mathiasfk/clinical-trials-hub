@@ -563,8 +563,9 @@ describe('Eligibility assistant', () => {
       screen.getByRole('button', { name: /Copy criteria from another study/i }),
     )
 
-    const studyButton = await screen.findByRole('button', { name: /study-0002/i })
-    fireEvent.click(studyButton)
+    const idField = await screen.findByRole('textbox', { name: /Reference study id/i })
+    fireEvent.change(idField, { target: { value: 'study-0002' } })
+    fireEvent.keyDown(idField, { key: 'Enter', code: 'Enter' })
 
     const crit = await screen.findByRole('button', {
       name: /Inclusion: hsCRP above 5 mg\/L/i,
@@ -604,7 +605,7 @@ describe('Eligibility assistant', () => {
     fireEvent.click(
       screen.getByRole('button', { name: /Copy criteria from another study/i }),
     )
-    await screen.findByRole('button', { name: /study-0002/i })
+    await screen.findByRole('textbox', { name: /Reference study id/i })
 
     window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/summary`)
     fireEvent.popState(window)
@@ -616,6 +617,6 @@ describe('Eligibility assistant', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Open StudyHub assistant/i }))
     expect(screen.getByText(/Welcome to StudyHub assistant/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /study-0002/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: /Reference study id/i })).not.toBeInTheDocument()
   })
 })

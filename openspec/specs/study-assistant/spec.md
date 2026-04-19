@@ -29,16 +29,20 @@ The system SHALL render an introductory bot greeting and a root menu as the firs
 - **WHEN** the user activates the `Clear chat` control while a conversation is in progress
 - **THEN** the system SHALL clear the conversation thread and SHALL render the introductory bot message followed by the root menu again
 
-### Requirement: Assistant interaction is entirely menu-driven
-The system SHALL progress every conversation turn through interactive menu options rendered inside the latest bot turn. The drawer SHALL NOT accept free-text input as a way to drive the conversation. Every conversation state SHALL expose a menu that lets the user proceed, and the root menu SHALL be reachable from any non-root state via a `Back to main menu` option.
+### Requirement: Assistant interaction is menu-driven with a narrow text exception
+The system SHALL progress every conversation turn through interactive menu options rendered inside the latest bot turn, except in the `Copy criteria from another study` reference-id step. In that step, the user SHALL enter a reference study id in the drawer footer field and confirm with Enter; all other flows SHALL remain menu-only. Every conversation state SHALL expose a menu that lets the user proceed (or retry), and the root menu SHALL be reachable from any non-root state via a `Back to main menu` option.
 
 #### Scenario: User progresses the conversation with a menu choice
 - **WHEN** the user activates a menu option rendered by the current bot turn
 - **THEN** the system SHALL append a user turn displaying the selected option's label, SHALL compute the next bot turn deterministically, and SHALL render the next menu in that turn
 
-#### Scenario: User cannot drive the conversation with free text
-- **WHEN** the user attempts to interact with the drawer's text input
-- **THEN** the system SHALL NOT accept that input as a conversation turn and the input SHALL be visually disabled
+#### Scenario: Footer text is disabled except for reference study id entry
+- **WHEN** the assistant is not awaiting a reference study id for copy-from-study
+- **THEN** the drawer's text input SHALL be disabled and SHALL NOT append conversation turns
+
+#### Scenario: User submits a reference study id for copy-from-study
+- **WHEN** the assistant is awaiting a reference study id and the user types in the footer field and presses Enter
+- **THEN** the system SHALL normalize the input (trim whitespace, strip common punctuation, extract a `study-` + numeric id), resolve the study from the loaded workspace list or via `GET /api/studies/:id`, and SHALL proceed to the criterion menu or SHALL post an error bot turn that keeps reference-id entry available
 
 #### Scenario: User returns to the root from a nested menu
 - **WHEN** the user is inside any nested skill flow and activates the `Back to main menu` option
@@ -55,20 +59,20 @@ The system SHALL render bot turns aligned to the left side of the drawer thread 
 - **WHEN** the system appends a new turn that extends beyond the drawer viewport
 - **THEN** the drawer SHALL scroll so that the newly appended turn is visible
 
-### Requirement: Assistant can copy eligibility criteria from a selected study
-The system SHALL provide a `Copy criteria from another study` skill on the `Eligibility criteria` screen. When selected, the bot SHALL render a menu listing every registered study OTHER than the current study, identified by its study id and enriched with the study's therapeutic area and phase when available. After the user selects a study, the bot SHALL render that study's inclusion and exclusion criteria as two labeled groups of menu options showing each criterion's description. Activating a criterion option SHALL append that criterion to the matching group (inclusion stays inclusion, exclusion stays exclusion) of the current study's draft and SHALL post a bot confirmation turn. The menu SHALL remain available so the user can add additional criteria from the same source study, and SHALL offer `Pick another study` and `Back to main menu` controls.
+### Requirement: Assistant can copy eligibility criteria from a study identified by id
+The system SHALL provide a `Copy criteria from another study` skill on the `Eligibility criteria` screen. When selected, the bot SHALL prompt the user for the reference study's id and SHALL enable the drawer footer field for that purpose. The user SHALL NOT be required to pick from a scrolling list of all other studies. After a study is resolved (from the already-loaded workspace list or via `GET /api/studies/:id`), the bot SHALL render that study's inclusion and exclusion criteria as menu options showing each criterion's description. Activating a criterion option SHALL append that criterion to the matching group (inclusion stays inclusion, exclusion stays exclusion) of the current study's draft and SHALL post a bot confirmation turn. The menu SHALL remain available so the user can add additional criteria from the same source study, and SHALL offer `Pick another study` and `Back to main menu` controls.
 
 #### Scenario: User copies one inclusion criterion from another study
-- **WHEN** the user selects `Copy criteria from another study`, picks a study from the list, and activates one of that study's inclusion criteria options
+- **WHEN** the user selects `Copy criteria from another study`, enters a valid reference study id that resolves to another study, and activates one of that study's inclusion criteria options
 - **THEN** the system SHALL append that criterion to the current study's inclusion criteria draft and SHALL post a bot confirmation turn identifying the added criterion
 
 #### Scenario: Inclusion and exclusion groups are preserved when copying
 - **WHEN** the user activates an exclusion criterion option from another study
 - **THEN** the system SHALL append the criterion to the current study's exclusion criteria draft and SHALL NOT add it to the inclusion criteria draft
 
-#### Scenario: No other studies are available to copy from
-- **WHEN** the user selects `Copy criteria from another study` and no study other than the current one exists in the workspace
-- **THEN** the system SHALL post a bot turn explaining that no other studies are available and SHALL offer the `Back to main menu` option
+#### Scenario: Copy-from-study still works when the workspace list is empty or failed to load
+- **WHEN** the user selects `Copy criteria from another study` and the other-studies list is empty or could not be loaded, but another study still exists on the server
+- **THEN** the system SHALL still allow entering a reference study id (and loading that study by id when needed) or SHALL offer `Retry` / `Back to main menu` when the list failed to load
 
 ### Requirement: Assistant can suggest criteria from similar studies using a deterministic heuristic
 The system SHALL provide a `Suggest criteria based on similar studies` skill on the `Eligibility criteria` screen. When selected, the bot SHALL rank all other registered studies using a deterministic similarity heuristic against the current study, select up to three distinct suggested criteria drawn from the highest-ranked studies, and render them as menu options labeled with each criterion's description and its source study identifier. Activating a suggestion SHALL append that criterion to the matching group of the current study's draft and SHALL post a bot confirmation turn followed by a menu offering `Suggest three more` and `Back to main menu`.
@@ -102,7 +106,7 @@ Studies SHALL be ordered by descending score, with ties broken by ascending lexi
 - **THEN** the system SHALL render up to three new suggestions drawn from the same ranked study list, excluding criteria already present in the current draft, until no further unique suggestions remain
 
 ### Requirement: Assistant mutates only the local eligibility draft, not the backend
-The system SHALL append criteria chosen through the assistant to the local form state of the `Eligibility criteria` screen and SHALL NOT call the study eligibility update endpoint, the full-study update endpoint, or the create-study endpoint on behalf of the user. Persistence SHALL remain gated by the existing `Save` action in edit mode and the existing `Next` and wizard `Publish` actions in new-study mode.
+The system SHALL append criteria chosen through the assistant to the local form state of the `Eligibility criteria` screen and SHALL NOT call the study eligibility update endpoint, the full-study update endpoint, or the create-study endpoint on behalf of the user. The assistant MAY issue read-only requests such as `GET /api/studies` (workspace list) or `GET /api/studies/:id` (resolve a reference study by id for copy-from-study). Persistence SHALL remain gated by the existing `Save` action in edit mode and the existing `Next` and wizard `Publish` actions in new-study mode.
 
 #### Scenario: Accepted criterion is visible in the editor but not persisted
 - **WHEN** the user accepts a criterion through the assistant on an existing study's `Eligibility criteria` screen

@@ -74,7 +74,7 @@ describe('AssistantChatDock — copy-from-study flow', () => {
     return baseContext({
       otherStudies: [
         study({
-          id: 'study-b',
+          id: 'study-0003',
           therapeuticArea: 'Cardiovascular',
           phase: 'Phase 2',
           inclusionCriteria: [hsCrp],
@@ -106,7 +106,9 @@ describe('AssistantChatDock — copy-from-study flow', () => {
       screen.getByRole('button', { name: /Copy criteria from another study/i }),
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /study-b/i }))
+    const idField = screen.getByRole('textbox', { name: /Reference study id/i })
+    fireEvent.change(idField, { target: { value: 'study-0003' } })
+    fireEvent.keyDown(idField, { key: 'Enter', code: 'Enter' })
 
     fireEvent.click(
       screen.getByRole('button', { name: /Inclusion: hsCRP above 2 mg\/L/i }),
@@ -134,7 +136,9 @@ describe('AssistantChatDock — copy-from-study flow', () => {
     fireEvent.click(
       screen.getByRole('button', { name: /Copy criteria from another study/i }),
     )
-    fireEvent.click(screen.getByRole('button', { name: /study-b/i }))
+    const idField = screen.getByRole('textbox', { name: /Reference study id/i })
+    fireEvent.change(idField, { target: { value: 'study-0003' } })
+    fireEvent.keyDown(idField, { key: 'Enter', code: 'Enter' })
 
     fireEvent.click(screen.getByRole('button', { name: /Clear chat/i }))
 
@@ -162,7 +166,7 @@ describe('AssistantChatDock — suggestion flow', () => {
           exclusionCriteria: [suggestedB],
         }),
         study({
-          id: 'study-b',
+          id: 'study-0004',
           therapeuticArea: 'Oncology',
           inclusionCriteria: [suggestedC, unused],
         }),
@@ -181,7 +185,7 @@ describe('AssistantChatDock — suggestion flow', () => {
 
     const suggestButtons = screen
       .getAllByRole('button')
-      .filter((btn) => /from study-[ab]/i.test(btn.textContent ?? ''))
+      .filter((btn) => /from study-/i.test(btn.textContent ?? ''))
     expect(suggestButtons).toHaveLength(3)
 
     fireEvent.click(suggestButtons[0])
@@ -200,7 +204,7 @@ describe('AssistantChatDock — suggestion flow', () => {
     fireEvent.click(screen.getByRole('button', { name: /Suggest three more/i }))
     const regenerated = screen
       .getAllByRole('button')
-      .filter((btn) => /from study-[ab]/i.test(btn.textContent ?? ''))
+      .filter((btn) => /from study-/i.test(btn.textContent ?? ''))
       .filter((btn) => !btn.hasAttribute('disabled'))
     const labels = regenerated.map((btn) => btn.textContent ?? '')
     expect(labels.every((label) => !/A-in1/.test(label))).toBe(true)
