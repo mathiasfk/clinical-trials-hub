@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
-	"sync/atomic"
+	"time"
 
 	"github.com/mathias/clinical-trials-hub/backend/internal/domain"
 	"github.com/mathias/clinical-trials-hub/backend/internal/repository"
@@ -42,15 +42,45 @@ func (e *NotFoundError) Error() string {
 	return fmt.Sprintf("%s not found", e.Resource)
 }
 
-type IDGenerator func() string
+type IDGenerator func(ctx context.Context) (string, error)
 
-func NewSequentialIDGenerator(prefix string) IDGenerator {
-	var counter uint64
-
-	return func() string {
-		next := atomic.AddUint64(&counter, 1)
-		return fmt.Sprintf("%s-%04d", prefix, next)
+func NewRepositoryAwareIDGenerator(prefix string, repo repository.StudyRepository) IDGenerator {
+	return func(ctx context.Context) (string, error) {
+		studies, err := repo.List(ctx)
+		if err != nil {
+			return "", err
+		}
+		highest := 0
+		for _, study := range studies {
+			suffix, ok := parseStudyIDSuffix(prefix, study.ID)
+			if !ok {
+				continue
+			}
+			if suffix > highest {
+				highest = suffix
+			}
+		}
+		return fmt.Sprintf("%s-%04d", prefix, highest+1), nil
 	}
+}
+
+func parseStudyIDSuffix(prefix, id string) (int, bool) {
+	expectedPrefix := prefix + "-"
+	if !strings.HasPrefix(id, expectedPrefix) {
+		return 0, false
+	}
+	suffix := id[len(expectedPrefix):]
+	if suffix == "" {
+		return 0, false
+	}
+	value := 0
+	for _, r := range suffix {
+		if r < '0' || r > '9' {
+			return 0, false
+		}
+		value = value*10 + int(r-'0')
+	}
+	return value, true
 }
 
 type StudyService struct {
@@ -71,18 +101,26 @@ func (s *StudyService) CreateStudy(ctx context.Context, input domain.StudyCreate
 		return domain.Study{}, err
 	}
 
+	id, err := s.idGenerator(ctx)
+	if err != nil {
+		return domain.Study{}, err
+	}
+
 	study := domain.Study{
-		ID:                s.idGenerator(),
-		Objectives:        normalized.Objectives,
-		Endpoints:         normalized.Endpoints,
-		InclusionCriteria: normalized.InclusionCriteria,
-		ExclusionCriteria: normalized.ExclusionCriteria,
-		Participants:      normalized.Participants,
-		StudyType:         normalized.StudyType,
-		NumberOfArms:      normalized.NumberOfArms,
-		Phase:             normalized.Phase,
-		TherapeuticArea:   normalized.TherapeuticArea,
-		PatientPopulation: normalized.PatientPopulation,
+		ID:                     id,
+		Objectives:             normalized.Objectives,
+		Endpoints:              normalized.Endpoints,
+		InclusionCriteria:      normalized.InclusionCriteria,
+		ExclusionCriteria:      normalized.ExclusionCriteria,
+		Participants:           normalized.Participants,
+		StudyType:              normalized.StudyType,
+		NumberOfArms:           normalized.NumberOfArms,
+		Phase:                  normalized.Phase,
+		TherapeuticArea:        normalized.TherapeuticArea,
+		PatientPopulation:      normalized.PatientPopulation,
+		FirstPatientFirstVisit: normalized.FirstPatientFirstVisit,
+		LastPatientFirstVisit:  normalized.LastPatientFirstVisit,
+		ProtocolApprovalDate:   normalized.ProtocolApprovalDate,
 	}
 
 	return s.repository.Create(ctx, study)
@@ -112,17 +150,20 @@ func (s *StudyService) ReplaceStudy(
 	}
 
 	study := domain.Study{
-		ID:                normalizedID,
-		Objectives:        normalized.Objectives,
-		Endpoints:         normalized.Endpoints,
-		InclusionCriteria: normalized.InclusionCriteria,
-		ExclusionCriteria: normalized.ExclusionCriteria,
-		Participants:      normalized.Participants,
-		StudyType:         normalized.StudyType,
-		NumberOfArms:      normalized.NumberOfArms,
-		Phase:             normalized.Phase,
-		TherapeuticArea:   normalized.TherapeuticArea,
-		PatientPopulation: normalized.PatientPopulation,
+		ID:                     normalizedID,
+		Objectives:             normalized.Objectives,
+		Endpoints:              normalized.Endpoints,
+		InclusionCriteria:      normalized.InclusionCriteria,
+		ExclusionCriteria:      normalized.ExclusionCriteria,
+		Participants:           normalized.Participants,
+		StudyType:              normalized.StudyType,
+		NumberOfArms:           normalized.NumberOfArms,
+		Phase:                  normalized.Phase,
+		TherapeuticArea:        normalized.TherapeuticArea,
+		PatientPopulation:      normalized.PatientPopulation,
+		FirstPatientFirstVisit: normalized.FirstPatientFirstVisit,
+		LastPatientFirstVisit:  normalized.LastPatientFirstVisit,
+		ProtocolApprovalDate:   normalized.ProtocolApprovalDate,
 	}
 
 	updated, found, err := s.repository.Replace(ctx, study)
@@ -169,14 +210,17 @@ func (s *StudyService) GetEligibilityDimensions() []domain.DimensionDefinition {
 
 func normalizeAndValidateCreateInput(input domain.StudyCreateInput) (domain.StudyCreateInput, error) {
 	normalized := domain.StudyCreateInput{
-		Objectives:        normalizeTextList(input.Objectives),
-		Endpoints:         normalizeTextList(input.Endpoints),
-		Participants:      input.Participants,
-		StudyType:         strings.ToLower(strings.TrimSpace(input.StudyType)),
-		NumberOfArms:      input.NumberOfArms,
-		Phase:             strings.TrimSpace(input.Phase),
-		TherapeuticArea:   strings.TrimSpace(input.TherapeuticArea),
-		PatientPopulation: strings.TrimSpace(input.PatientPopulation),
+		Objectives:             normalizeTextList(input.Objectives),
+		Endpoints:              normalizeTextList(input.Endpoints),
+		Participants:           input.Participants,
+		StudyType:              strings.ToLower(strings.TrimSpace(input.StudyType)),
+		NumberOfArms:           input.NumberOfArms,
+		Phase:                  strings.TrimSpace(input.Phase),
+		TherapeuticArea:        strings.TrimSpace(input.TherapeuticArea),
+		PatientPopulation:      strings.TrimSpace(input.PatientPopulation),
+		FirstPatientFirstVisit: strings.TrimSpace(input.FirstPatientFirstVisit),
+		LastPatientFirstVisit:  strings.TrimSpace(input.LastPatientFirstVisit),
+		ProtocolApprovalDate:   strings.TrimSpace(input.ProtocolApprovalDate),
 	}
 
 	validationErrors := map[string]string{}
@@ -188,11 +232,8 @@ func normalizeAndValidateCreateInput(input domain.StudyCreateInput) (domain.Stud
 	if len(normalized.Endpoints) == 0 {
 		validationErrors["endpoints"] = "at least one endpoint is required"
 	}
-	if len(normalized.InclusionCriteria) == 0 {
-		validationErrors["inclusionCriteria"] = "at least one inclusion criterion is required"
-	}
-	if len(normalized.ExclusionCriteria) == 0 {
-		validationErrors["exclusionCriteria"] = "at least one exclusion criterion is required"
+	if len(normalized.InclusionCriteria)+len(normalized.ExclusionCriteria) == 0 {
+		validationErrors["eligibilityCriteria"] = "at least one inclusion or exclusion criterion is required"
 	}
 	if normalized.Participants <= 0 {
 		validationErrors["participants"] = "participants must be greater than zero"
@@ -207,13 +248,20 @@ func normalizeAndValidateCreateInput(input domain.StudyCreateInput) (domain.Stud
 	}
 	if normalized.Phase == "" {
 		validationErrors["phase"] = "phase is required"
+	} else if !domain.IsAllowedPhase(normalized.Phase) {
+		validationErrors["phase"] = "phase must be one of Phase 1, Phase 2, Phase 3, or Phase 4"
 	}
 	if normalized.TherapeuticArea == "" {
 		validationErrors["therapeuticArea"] = "therapeutic area is required"
+	} else if !domain.IsAllowedTherapeuticArea(normalized.TherapeuticArea) {
+		validationErrors["therapeuticArea"] = "therapeutic area must be one of the supported values"
 	}
 	if normalized.PatientPopulation == "" {
 		validationErrors["patientPopulation"] = "patient population is required"
 	}
+	validateOptionalDate("firstPatientFirstVisit", normalized.FirstPatientFirstVisit, validationErrors)
+	validateOptionalDate("lastPatientFirstVisit", normalized.LastPatientFirstVisit, validationErrors)
+	validateOptionalDate("protocolApprovalDate", normalized.ProtocolApprovalDate, validationErrors)
 
 	if len(validationErrors) > 0 {
 		return domain.StudyCreateInput{}, &ValidationError{Fields: validationErrors}
@@ -222,11 +270,23 @@ func normalizeAndValidateCreateInput(input domain.StudyCreateInput) (domain.Stud
 	return normalized, nil
 }
 
+func validateOptionalDate(field, value string, errors map[string]string) {
+	if value == "" {
+		return
+	}
+	if _, err := time.Parse("2006-01-02", value); err != nil {
+		errors[field] = field + " must be an ISO-8601 calendar date (YYYY-MM-DD)"
+	}
+}
+
 func normalizeAndValidateEligibilityInput(input domain.StudyEligibilityInput) (domain.StudyEligibilityInput, error) {
 	validationErrors := map[string]string{}
 	normalized := domain.StudyEligibilityInput{
 		InclusionCriteria: normalizeEligibilityCriteria(input.InclusionCriteria, "inclusionCriteria", validationErrors),
 		ExclusionCriteria: normalizeEligibilityCriteria(input.ExclusionCriteria, "exclusionCriteria", validationErrors),
+	}
+	if len(normalized.InclusionCriteria)+len(normalized.ExclusionCriteria) == 0 {
+		validationErrors["eligibilityCriteria"] = "at least one inclusion or exclusion criterion is required"
 	}
 
 	if len(validationErrors) > 0 {
@@ -306,10 +366,6 @@ func normalizeEligibilityCriteria(
 		})
 	}
 
-	if len(normalized) == 0 {
-		validationErrors[field] = fmt.Sprintf("at least one %s is required", humanizeCriterionField(field))
-	}
-
 	return normalized
 }
 
@@ -323,13 +379,3 @@ func normalizeUnit(unit string, allowedUnits []string) (string, bool) {
 	return "", false
 }
 
-func humanizeCriterionField(field string) string {
-	switch field {
-	case "inclusionCriteria":
-		return "inclusion criterion"
-	case "exclusionCriteria":
-		return "exclusion criterion"
-	default:
-		return field
-	}
-}

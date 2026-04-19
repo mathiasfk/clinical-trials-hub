@@ -13,7 +13,7 @@ import (
 
 func main() {
 	repository := memory.NewStudyRepository(bootstrap.SeedStudies())
-	idGenerator := service.NewSequentialIDGenerator("study")
+	idGenerator := service.NewRepositoryAwareIDGenerator("study", repository)
 	studyService := service.NewStudyService(repository, idGenerator)
 	server := transport.NewServer(studyService)
 

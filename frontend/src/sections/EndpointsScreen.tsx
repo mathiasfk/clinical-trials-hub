@@ -106,7 +106,6 @@ function EndpointsForm({ initial }: { initial: EndpointsData }) {
 
   return (
     <form className="form-grid" onSubmit={handleSubmit}>
-      <h2>Endpoints</h2>
       <p className="subtitle">
         Provide at least one endpoint. Each endpoint must be longer than 10 characters.
       </p>
@@ -160,5 +159,8 @@ function toStudyInput(study: Study): StudyCreateInput {
     phase: study.phase,
     therapeuticArea: study.therapeuticArea,
     patientPopulation: study.patientPopulation,
+    firstPatientFirstVisit: study.firstPatientFirstVisit,
+    lastPatientFirstVisit: study.lastPatientFirstVisit,
+    protocolApprovalDate: study.protocolApprovalDate,
   }
 }

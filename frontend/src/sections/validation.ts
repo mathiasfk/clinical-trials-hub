@@ -4,6 +4,7 @@ import type {
   Study,
   StudyType,
 } from '../types'
+import { isPhaseOption, isTherapeuticAreaOption } from './constants'
 
 export interface StudyInformationData {
   phase: string
@@ -12,7 +13,12 @@ export interface StudyInformationData {
   studyType: StudyType
   participants: number | null
   numberOfArms: number | null
+  firstPatientFirstVisit: string
+  lastPatientFirstVisit: string
+  protocolApprovalDate: string
 }
+
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 export interface ObjectivesData {
   objectives: string[]
@@ -41,9 +47,13 @@ export function validateStudyInformation(
   const errors: Record<string, string> = {}
   if (!data.phase.trim()) {
     errors.phase = 'Phase is required.'
+  } else if (!isPhaseOption(data.phase)) {
+    errors.phase = 'Phase must be selected from the allowed list.'
   }
   if (!data.therapeuticArea.trim()) {
     errors.therapeuticArea = 'Therapeutic area is required.'
+  } else if (!isTherapeuticAreaOption(data.therapeuticArea)) {
+    errors.therapeuticArea = 'Therapeutic area must be selected from the allowed list.'
   }
   if (!data.patientPopulation.trim()) {
     errors.patientPopulation = 'Patient population is required.'
@@ -57,7 +67,44 @@ export function validateStudyInformation(
   if (data.numberOfArms === null || !Number.isFinite(data.numberOfArms) || data.numberOfArms < 1) {
     errors.numberOfArms = 'Number of arms must be at least 1.'
   }
+  validateOptionalIsoDate(
+    'firstPatientFirstVisit',
+    data.firstPatientFirstVisit,
+    'First patient first visit',
+    errors,
+  )
+  validateOptionalIsoDate(
+    'lastPatientFirstVisit',
+    data.lastPatientFirstVisit,
+    'Last patient first visit',
+    errors,
+  )
+  validateOptionalIsoDate(
+    'protocolApprovalDate',
+    data.protocolApprovalDate,
+    'Protocol approval date',
+    errors,
+  )
   return errors
+}
+
+function validateOptionalIsoDate(
+  field: string,
+  value: string,
+  label: string,
+  errors: Record<string, string>,
+) {
+  if (!value.trim()) {
+    return
+  }
+  if (!ISO_DATE_PATTERN.test(value)) {
+    errors[field] = `${label} must be an ISO-8601 date (YYYY-MM-DD).`
+    return
+  }
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    errors[field] = `${label} must be a valid date.`
+  }
 }
 
 export function validateObjectives(data: ObjectivesData): Record<string, string> {
@@ -95,6 +142,11 @@ export function validateEligibility(
   dimensions: EligibilityDimension[],
 ): Record<string, string> {
   const errors: Record<string, string> = {}
+  if (data.inclusionCriteria.length + data.exclusionCriteria.length === 0) {
+    errors.eligibilityCriteria =
+      'At least one inclusion or exclusion criterion is required.'
+    return errors
+  }
   validateCriteriaGroup('inclusionCriteria', data.inclusionCriteria, dimensions, errors)
   validateCriteriaGroup('exclusionCriteria', data.exclusionCriteria, dimensions, errors)
   return errors
@@ -106,14 +158,6 @@ function validateCriteriaGroup(
   dimensions: EligibilityDimension[],
   errors: Record<string, string>,
 ) {
-  if (criteria.length === 0) {
-    errors[fieldKey] =
-      fieldKey === 'inclusionCriteria'
-        ? 'At least one inclusion criterion is required.'
-        : 'At least one exclusion criterion is required.'
-    return
-  }
-
   criteria.forEach((criterion, index) => {
     if (!criterion.description.trim()) {
       errors[`${fieldKey}[${index}].description`] = 'Description is required.'
@@ -188,5 +232,8 @@ export function studyToStudyInformation(study: Study): StudyInformationData {
     studyType: study.studyType,
     participants: study.participants,
     numberOfArms: study.numberOfArms,
+    firstPatientFirstVisit: study.firstPatientFirstVisit,
+    lastPatientFirstVisit: study.lastPatientFirstVisit,
+    protocolApprovalDate: study.protocolApprovalDate,
   }
 }

@@ -35,3 +35,29 @@ export function nextSection(current: SectionSlug): SectionSlug | null {
 export function isSectionSlug(value: unknown): value is SectionSlug {
   return typeof value === 'string' && (SECTION_ORDER as readonly string[]).includes(value)
 }
+
+export const PHASE_OPTIONS = ['Phase 1', 'Phase 2', 'Phase 3', 'Phase 4'] as const
+
+export type PhaseOption = (typeof PHASE_OPTIONS)[number]
+
+export const THERAPEUTIC_AREA_OPTIONS = [
+  'Cardiovascular',
+  'Diabetes',
+  'Hematology',
+  'Sickle Cell Disease',
+  'Obesity',
+  'Rare Diseases',
+] as const
+
+export type TherapeuticAreaOption = (typeof THERAPEUTIC_AREA_OPTIONS)[number]
+
+export function isPhaseOption(value: unknown): value is PhaseOption {
+  return typeof value === 'string' && (PHASE_OPTIONS as readonly string[]).includes(value)
+}
+
+export function isTherapeuticAreaOption(value: unknown): value is TherapeuticAreaOption {
+  return (
+    typeof value === 'string' &&
+    (THERAPEUTIC_AREA_OPTIONS as readonly string[]).includes(value)
+  )
+}

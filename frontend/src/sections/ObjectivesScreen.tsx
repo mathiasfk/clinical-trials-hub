@@ -106,7 +106,6 @@ function ObjectivesForm({ initial }: { initial: ObjectivesData }) {
 
   return (
     <form className="form-grid" onSubmit={handleSubmit}>
-      <h2>Objectives</h2>
       <p className="subtitle">
         Provide at least one objective. Each objective must be longer than 10 characters.
       </p>
@@ -160,5 +159,8 @@ function toStudyInput(study: Study): StudyCreateInput {
     phase: study.phase,
     therapeuticArea: study.therapeuticArea,
     patientPopulation: study.patientPopulation,
+    firstPatientFirstVisit: study.firstPatientFirstVisit,
+    lastPatientFirstVisit: study.lastPatientFirstVisit,
+    protocolApprovalDate: study.protocolApprovalDate,
   }
 }

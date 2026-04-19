@@ -97,17 +97,20 @@ func (r *StudyRepository) Replace(_ context.Context, study domain.Study) (domain
 
 func cloneStudy(study domain.Study) domain.Study {
 	return domain.Study{
-		ID:                study.ID,
-		Objectives:        append([]string(nil), study.Objectives...),
-		Endpoints:         append([]string(nil), study.Endpoints...),
-		InclusionCriteria: cloneEligibilityCriteria(study.InclusionCriteria),
-		ExclusionCriteria: cloneEligibilityCriteria(study.ExclusionCriteria),
-		Participants:      study.Participants,
-		StudyType:         study.StudyType,
-		NumberOfArms:      study.NumberOfArms,
-		Phase:             study.Phase,
-		TherapeuticArea:   study.TherapeuticArea,
-		PatientPopulation: study.PatientPopulation,
+		ID:                     study.ID,
+		Objectives:             append([]string(nil), study.Objectives...),
+		Endpoints:              append([]string(nil), study.Endpoints...),
+		InclusionCriteria:      cloneEligibilityCriteria(study.InclusionCriteria),
+		ExclusionCriteria:      cloneEligibilityCriteria(study.ExclusionCriteria),
+		Participants:           study.Participants,
+		StudyType:              study.StudyType,
+		NumberOfArms:           study.NumberOfArms,
+		Phase:                  study.Phase,
+		TherapeuticArea:        study.TherapeuticArea,
+		PatientPopulation:      study.PatientPopulation,
+		FirstPatientFirstVisit: study.FirstPatientFirstVisit,
+		LastPatientFirstVisit:  study.LastPatientFirstVisit,
+		ProtocolApprovalDate:   study.ProtocolApprovalDate,
 	}
 }
 

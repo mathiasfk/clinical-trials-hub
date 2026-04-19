@@ -46,10 +46,10 @@ function EligibilityForm() {
       : ctx.draft.eligibility.exclusionCriteria
 
   const [inclusionCriteria, setInclusionCriteria] = useState<CriterionDraft[]>(() =>
-    criteriaToDrafts(initialInclusion, ctx.dimensions),
+    criteriaToDrafts(initialInclusion),
   )
   const [exclusionCriteria, setExclusionCriteria] = useState<CriterionDraft[]>(() =>
-    criteriaToDrafts(initialExclusion, ctx.dimensions),
+    criteriaToDrafts(initialExclusion),
   )
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [submitError, setSubmitError] = useState('')
@@ -103,7 +103,6 @@ function EligibilityForm() {
 
   return (
     <form className="form-grid" onSubmit={handleSubmit}>
-      <h2>Eligibility criteria</h2>
       <p className="subtitle">
         Add inclusion and exclusion criteria with a readable description and a deterministic rule.
       </p>

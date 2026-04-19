@@ -41,13 +41,6 @@ function EditSummary({ study }: { study: Study }) {
 
   return (
     <div className="workspace-page">
-      <header className="workspace-page-header">
-        <div>
-          <p className="eyebrow">Study</p>
-          <h2>Summary</h2>
-        </div>
-      </header>
-
       <div className="summary-grid">
         <SummaryCard
           title={SECTION_LABELS['study-information']}
@@ -70,6 +63,18 @@ function EditSummary({ study }: { study: Study }) {
           </p>
           <p>
             <strong>Number of arms:</strong> {study.numberOfArms}
+          </p>
+          <p>
+            <strong>First patient, first visit:</strong>{' '}
+            {study.firstPatientFirstVisit || 'Not set'}
+          </p>
+          <p>
+            <strong>Last patient, first visit:</strong>{' '}
+            {study.lastPatientFirstVisit || 'Not set'}
+          </p>
+          <p>
+            <strong>Protocol approval date:</strong>{' '}
+            {study.protocolApprovalDate || 'Not set'}
           </p>
         </SummaryCard>
 
@@ -140,13 +145,7 @@ function NewStudySummary({ ctx }: { ctx: NewSectionContext }) {
 
   return (
     <div className="workspace-page">
-      <header className="workspace-page-header">
-        <div>
-          <p className="eyebrow">New study</p>
-          <h2>Summary</h2>
-          <p className="subtitle">Review the draft and publish to create the study.</p>
-        </div>
-      </header>
+      <p className="subtitle">Review the draft and publish to create the study.</p>
 
       <div className="summary-grid">
         <SummaryCard title={SECTION_LABELS['study-information']}>
@@ -305,6 +304,18 @@ function NewStudyInformationContent({ data }: { data: StudyInformationData }) {
       </p>
       <p>
         <strong>Number of arms:</strong> {data.numberOfArms ?? 'Not set'}
+      </p>
+      <p>
+        <strong>First patient, first visit:</strong>{' '}
+        {data.firstPatientFirstVisit || 'Not set'}
+      </p>
+      <p>
+        <strong>Last patient, first visit:</strong>{' '}
+        {data.lastPatientFirstVisit || 'Not set'}
+      </p>
+      <p>
+        <strong>Protocol approval date:</strong>{' '}
+        {data.protocolApprovalDate || 'Not set'}
       </p>
     </>
   )

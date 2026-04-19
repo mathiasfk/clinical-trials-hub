@@ -51,6 +51,9 @@ function NewStudyOutlet({
       phase: draft.studyInformation.phase.trim(),
       therapeuticArea: draft.studyInformation.therapeuticArea.trim(),
       patientPopulation: draft.studyInformation.patientPopulation.trim(),
+      firstPatientFirstVisit: draft.studyInformation.firstPatientFirstVisit.trim(),
+      lastPatientFirstVisit: draft.studyInformation.lastPatientFirstVisit.trim(),
+      protocolApprovalDate: draft.studyInformation.protocolApprovalDate.trim(),
     }
     const created = await createStudy(payload)
     onStudyCreated(created)

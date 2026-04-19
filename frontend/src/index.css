@@ -1,5 +1,6 @@
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 14px;
   line-height: 1.5;
   color: #202020;
   background-color: #f5f7fb;
@@ -7,6 +8,17 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
 }
 
 * {
@@ -15,19 +27,57 @@
 
 body {
   margin: 0;
+  font-size: var(--text-base);
 }
 
 #root {
   min-height: 100vh;
 }
 
-h1,
-h2,
-h3,
-h4 {
+h1 {
+  font-size: var(--text-xl);
+  font-weight: var(--font-weight-semibold);
   margin: 0 0 0.5rem;
+}
+
+h2 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 0.5rem;
+}
+
+h3 {
+  font-size: var(--text-md);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 0.5rem;
+}
+
+h4 {
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 0.5rem;
+}
+
+label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+input,
+select,
+textarea,
+button {
+  font-size: var(--text-base);
+  font-family: inherit;
 }
 
 p {
   margin: 0;
+  font-size: var(--text-base);
+}
+
+small,
+.helper-text,
+.eyebrow {
+  font-size: var(--text-xs);
 }

@@ -51,9 +51,12 @@ const SEED_STUDY: Study = {
   participants: 120,
   studyType: 'parallel',
   numberOfArms: 2,
-  phase: 'Phase II',
-  therapeuticArea: 'Cardiology',
+  phase: 'Phase 2',
+  therapeuticArea: 'Cardiovascular',
   patientPopulation: 'Adults with elevated inflammation markers',
+  firstPatientFirstVisit: '',
+  lastPatientFirstVisit: '',
+  protocolApprovalDate: '',
 }
 
 const fetchMock = vi.fn()
@@ -127,7 +130,7 @@ describe('All studies view', () => {
     expect(screen.queryByRole('heading', { name: /Create study/i })).not.toBeInTheDocument()
 
     fireEvent.click(newStudyButton)
-    await screen.findByRole('heading', { name: /Study information/i })
+    await screen.findByRole('heading', { name: /New study > Study information/i, level: 1 })
     expect(window.location.pathname).toBe('/studies/new/study-information')
   })
 })
@@ -138,7 +141,7 @@ describe('New study wizard', () => {
     window.history.pushState({}, '', '/studies/new/study-information')
     render(<App />)
 
-    await screen.findByRole('heading', { name: /Study information/i })
+    await screen.findByRole('heading', { name: /New study > Study information/i, level: 1 })
 
     const outlineNav = await screen.findByRole('navigation', { name: /Study outline/i })
     expect(within(outlineNav).getByText(/Unpublished draft/i)).toBeInTheDocument()
@@ -195,42 +198,50 @@ describe('New study wizard', () => {
     window.history.pushState({}, '', '/studies/new/study-information')
     render(<App />)
 
-    await screen.findByRole('heading', { name: /Study information/i })
+    await screen.findByRole('heading', { name: /New study > Study information/i, level: 1 })
 
-    fireEvent.change(screen.getByLabelText(/^Phase$/i), { target: { value: 'Phase II' } })
-    fireEvent.change(screen.getByLabelText(/Therapeutic area/i), { target: { value: 'Oncology' } })
+    fireEvent.change(screen.getByLabelText(/^Phase$/i), { target: { value: 'Phase 2' } })
+    fireEvent.change(screen.getByLabelText(/Therapeutic area/i), { target: { value: 'Cardiovascular' } })
     fireEvent.change(screen.getByLabelText(/Patient population/i), { target: { value: 'Adults' } })
     fireEvent.change(screen.getByLabelText(/Number of participants/i), { target: { value: '100' } })
     fireEvent.change(screen.getByLabelText(/Number of arms/i), { target: { value: '2' } })
     fireEvent.click(screen.getByTestId('section-next-button'))
 
-    await screen.findByRole('heading', { name: /^Objectives$/i })
+    await screen.findByRole('heading', { name: /New study > Objectives/i, level: 1 })
     fireEvent.change(screen.getByLabelText(/Objective 1/i), {
       target: { value: 'Evaluate biomarker response in the study' },
     })
     fireEvent.click(screen.getByTestId('section-next-button'))
 
-    await screen.findByRole('heading', { name: /^Endpoints$/i })
+    await screen.findByRole('heading', { name: /New study > Endpoints/i, level: 1 })
     fireEvent.change(screen.getByLabelText(/Endpoint 1/i), {
       target: { value: 'Reduction in hsCRP by week twelve' },
     })
     fireEvent.click(screen.getByTestId('section-next-button'))
 
-    await screen.findByRole('heading', { name: /Eligibility criteria/i })
-    const descriptions = screen.getAllByLabelText(/Readable description/i)
+    await screen.findByRole('heading', { name: /New study > Eligibility criteria/i, level: 1 })
+    const addButtons = screen.getAllByRole('button', { name: /Add criterion/i })
+    fireEvent.click(addButtons[0])
+    fireEvent.click(addButtons[1])
+
+    const descriptions = screen.getAllByPlaceholderText(/Describe the criterion/i)
     const dimensions = screen.getAllByLabelText(/^Dimension$/i)
     const values = screen.getAllByLabelText(/^Value$/i)
+    const operators = screen.getAllByLabelText(/^Operator$/i)
 
     fireEvent.change(descriptions[0], { target: { value: 'Elevated hsCRP' } })
+    fireEvent.change(dimensions[0], { target: { value: 'hsCRP' } })
+    fireEvent.change(operators[0], { target: { value: '>' } })
     fireEvent.change(values[0], { target: { value: '2' } })
 
-    fireEvent.change(dimensions[1], { target: { value: 'age' } })
     fireEvent.change(descriptions[1], { target: { value: 'Advanced age' } })
+    fireEvent.change(dimensions[1], { target: { value: 'age' } })
+    fireEvent.change(operators[1], { target: { value: '>' } })
     fireEvent.change(values[1], { target: { value: '75' } })
 
     fireEvent.click(screen.getByTestId('section-next-button'))
 
-    await screen.findByRole('heading', { name: /^Summary$/i })
+    await screen.findByRole('heading', { name: /New study > Summary/i, level: 1 })
     expect(screen.queryByTestId(/^edit-/)).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByTestId('publish-button'))
@@ -254,7 +265,7 @@ describe('New study wizard', () => {
     window.history.pushState({}, '', '/studies/new/summary')
     render(<App />)
 
-    await screen.findByRole('heading', { name: /^Summary$/i })
+    await screen.findByRole('heading', { name: /New study > Summary/i, level: 1 })
     fireEvent.click(screen.getByTestId('publish-button'))
 
     const incompleteHeading = await screen.findByRole('heading', { name: /Incomplete sections/i })
@@ -264,7 +275,7 @@ describe('New study wizard', () => {
     expect(firstLink).toHaveAttribute('href', '/studies/new/study-information')
 
     fireEvent.click(firstLink)
-    await screen.findByRole('heading', { name: /Study information/i })
+    await screen.findByRole('heading', { name: /New study > Study information/i, level: 1 })
     expect(window.location.pathname).toBe('/studies/new/study-information')
 
     const postCalls = fetchMock.mock.calls.filter(
@@ -280,7 +291,7 @@ describe('New study wizard', () => {
     window.history.pushState({}, '', '/studies/new/summary')
     render(<App />)
 
-    await screen.findByRole('heading', { name: /^Summary$/i })
+    await screen.findByRole('heading', { name: /New study > Summary/i, level: 1 })
     fireEvent.click(screen.getByTestId('discard-button'))
 
     const dialog = await screen.findByRole('dialog')
@@ -324,7 +335,7 @@ describe('Edit study summary', () => {
     window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/summary`)
     render(<App />)
 
-    await screen.findByRole('heading', { name: /^Summary$/i })
+    await screen.findByRole('heading', { name: /study-0001 > Summary/i, level: 1 })
     await flush()
 
     expect(screen.queryByTestId('publish-button')).not.toBeInTheDocument()
@@ -352,7 +363,7 @@ describe('Edit study summary', () => {
     window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/study-information`)
     render(<App />)
 
-    await screen.findByRole('heading', { name: /Study information/i })
+    await screen.findByRole('heading', { name: /study-0001 > Study information/i, level: 1 })
 
     const saveButton = await screen.findByTestId('section-save-button')
     expect(saveButton).toHaveTextContent(/^Save$/)
@@ -389,7 +400,7 @@ describe('Edit study summary', () => {
         return jsonResponse({ data: SEED_STUDY })
       }
       if (url === `/api/studies/${SEED_STUDY.id}` && method === 'PUT') {
-        const updated = { ...SEED_STUDY, phase: 'Phase III' }
+        const updated = { ...SEED_STUDY, phase: 'Phase 3' }
         return jsonResponse({ data: updated })
       }
       throw new Error(`Unexpected request: ${method} ${url}`)
@@ -400,10 +411,10 @@ describe('Edit study summary', () => {
 
     const phaseInput = await screen.findByLabelText(/^Phase$/i)
     await waitFor(() => {
-      expect((phaseInput as HTMLInputElement).value).toBe('Phase II')
+      expect((phaseInput as HTMLSelectElement).value).toBe('Phase 2')
     })
 
-    fireEvent.change(phaseInput, { target: { value: 'Phase III' } })
+    fireEvent.change(phaseInput, { target: { value: 'Phase 3' } })
     fireEvent.click(screen.getByTestId('section-save-button'))
 
     await waitFor(() => {
@@ -414,7 +425,7 @@ describe('Edit study summary', () => {
       )
       expect(putCall).toBeDefined()
       const body = JSON.parse(((putCall![1] as RequestInit).body as string)) as Record<string, unknown>
-      expect(body.phase).toBe('Phase III')
+      expect(body.phase).toBe('Phase 3')
     })
 
     await screen.findByText(/Study information saved\./i)

@@ -14,7 +14,7 @@ import (
 
 func newTestServer() *Server {
 	repo := memory.NewStudyRepository(bootstrap.SeedStudies())
-	studyService := service.NewStudyService(repo, service.NewSequentialIDGenerator("study"))
+	studyService := service.NewStudyService(repo, service.NewRepositoryAwareIDGenerator("study", repo))
 	return NewServer(studyService)
 }
 
@@ -78,8 +78,8 @@ func TestCreateAndGetStudy(t *testing.T) {
 		"participants":      72,
 		"studyType":         "parallel",
 		"numberOfArms":      2,
-		"phase":             "Phase II",
-		"therapeuticArea":   "Oncology",
+		"phase":             "Phase 2",
+		"therapeuticArea":   "Cardiovascular",
 		"patientPopulation": "Adults with advanced solid tumors",
 	}
 	body, _ := json.Marshal(payload)
@@ -130,8 +130,8 @@ func TestReplaceStudySuccess(t *testing.T) {
 		"participants":      150,
 		"studyType":         "parallel",
 		"numberOfArms":      3,
-		"phase":             "Phase III",
-		"therapeuticArea":   "Oncology",
+		"phase":             "Phase 3",
+		"therapeuticArea":   "Cardiovascular",
 		"patientPopulation": "Adults",
 	}
 	body, _ := json.Marshal(payload)
@@ -158,7 +158,7 @@ func TestReplaceStudySuccess(t *testing.T) {
 	if response.Data.ID != "study-0001" {
 		t.Fatalf("expected id study-0001, got %s", response.Data.ID)
 	}
-	if response.Data.Phase != "Phase III" {
+	if response.Data.Phase != "Phase 3" {
 		t.Fatalf("expected updated phase, got %s", response.Data.Phase)
 	}
 }
@@ -194,8 +194,8 @@ func TestReplaceStudyNotFound(t *testing.T) {
 		"participants":      150,
 		"studyType":         "parallel",
 		"numberOfArms":      3,
-		"phase":             "Phase III",
-		"therapeuticArea":   "Oncology",
+		"phase":             "Phase 3",
+		"therapeuticArea":   "Cardiovascular",
 		"patientPopulation": "Adults",
 	}
 	body, _ := json.Marshal(payload)
@@ -233,6 +233,181 @@ func TestUpdateStudyEligibility(t *testing.T) {
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+}
+
+func TestCreateStudyRoundTripsSOAFieldsAndVocabularies(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer()
+	payload := map[string]any{
+		"objectives": []string{"Measure progression-free survival"},
+		"endpoints":  []string{"Median PFS at 24 weeks"},
+		"inclusionCriteria": []map[string]any{
+			criterionPayload("Require age above 18.", "age", ">", 18, "years old"),
+		},
+		"exclusionCriteria":      []map[string]any{},
+		"participants":           72,
+		"studyType":              "parallel",
+		"numberOfArms":           2,
+		"phase":                  "Phase 2",
+		"therapeuticArea":        "Cardiovascular",
+		"patientPopulation":      "Adults with advanced disease",
+		"firstPatientFirstVisit": "2025-03-15",
+		"lastPatientFirstVisit":  "2025-09-30",
+		"protocolApprovalDate":   "2025-01-10",
+	}
+	body, _ := json.Marshal(payload)
+
+	createRequest := httptest.NewRequest(http.MethodPost, "/api/studies", bytes.NewReader(body))
+	createRequest.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	server.Routes().ServeHTTP(recorder, createRequest)
+
+	if recorder.Code != http.StatusCreated {
+		t.Fatalf("expected status 201, got %d: %s", recorder.Code, recorder.Body.String())
+	}
+
+	var response struct {
+		Data struct {
+			ID                     string `json:"id"`
+			Phase                  string `json:"phase"`
+			TherapeuticArea        string `json:"therapeuticArea"`
+			FirstPatientFirstVisit string `json:"firstPatientFirstVisit"`
+			LastPatientFirstVisit  string `json:"lastPatientFirstVisit"`
+			ProtocolApprovalDate   string `json:"protocolApprovalDate"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("expected valid JSON response: %v", err)
+	}
+	if response.Data.Phase != "Phase 2" {
+		t.Fatalf("expected phase Phase 2, got %s", response.Data.Phase)
+	}
+	if response.Data.TherapeuticArea != "Cardiovascular" {
+		t.Fatalf("expected therapeuticArea Cardiovascular, got %s", response.Data.TherapeuticArea)
+	}
+	if response.Data.FirstPatientFirstVisit != "2025-03-15" {
+		t.Fatalf("expected FPFV to round-trip, got %s", response.Data.FirstPatientFirstVisit)
+	}
+	if response.Data.LastPatientFirstVisit != "2025-09-30" {
+		t.Fatalf("expected LPFV to round-trip, got %s", response.Data.LastPatientFirstVisit)
+	}
+	if response.Data.ProtocolApprovalDate != "2025-01-10" {
+		t.Fatalf("expected protocol approval date to round-trip, got %s", response.Data.ProtocolApprovalDate)
+	}
+}
+
+func TestCreateStudyRejectsUnsupportedPhaseAndTherapeuticArea(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer()
+	payload := map[string]any{
+		"objectives": []string{"Evaluate primary endpoint effects"},
+		"endpoints":  []string{"Reduction in biomarker at week 12"},
+		"inclusionCriteria": []map[string]any{
+			criterionPayload("Require age above 18.", "age", ">", 18, "years old"),
+		},
+		"exclusionCriteria": []map[string]any{},
+		"participants":      72,
+		"studyType":         "parallel",
+		"numberOfArms":      2,
+		"phase":             "Phase II",
+		"therapeuticArea":   "Oncology",
+		"patientPopulation": "Adults",
+	}
+	body, _ := json.Marshal(payload)
+
+	request := httptest.NewRequest(http.MethodPost, "/api/studies", bytes.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	server.Routes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", recorder.Code)
+	}
+
+	var response struct {
+		Errors map[string]string `json:"errors"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("expected valid JSON response: %v", err)
+	}
+	if response.Errors["phase"] == "" {
+		t.Fatal("expected a field-level error for phase")
+	}
+	if response.Errors["therapeuticArea"] == "" {
+		t.Fatal("expected a field-level error for therapeuticArea")
+	}
+}
+
+func TestCreateStudyRejectsMalformedSOADates(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer()
+	payload := map[string]any{
+		"objectives": []string{"Evaluate primary endpoint effects"},
+		"endpoints":  []string{"Reduction in biomarker at week 12"},
+		"inclusionCriteria": []map[string]any{
+			criterionPayload("Require age above 18.", "age", ">", 18, "years old"),
+		},
+		"exclusionCriteria":      []map[string]any{},
+		"participants":           72,
+		"studyType":              "parallel",
+		"numberOfArms":           2,
+		"phase":                  "Phase 2",
+		"therapeuticArea":        "Cardiovascular",
+		"patientPopulation":      "Adults",
+		"firstPatientFirstVisit": "not-a-date",
+	}
+	body, _ := json.Marshal(payload)
+
+	request := httptest.NewRequest(http.MethodPost, "/api/studies", bytes.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	server.Routes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", recorder.Code)
+	}
+	var response struct {
+		Errors map[string]string `json:"errors"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("expected valid JSON response: %v", err)
+	}
+	if response.Errors["firstPatientFirstVisit"] == "" {
+		t.Fatal("expected validation error for firstPatientFirstVisit")
+	}
+}
+
+func TestReplaceStudyRejectsUnsupportedVocabularies(t *testing.T) {
+	t.Parallel()
+
+	server := newTestServer()
+	payload := map[string]any{
+		"objectives": []string{"Updated objective"},
+		"endpoints":  []string{"Updated endpoint"},
+		"inclusionCriteria": []map[string]any{
+			criterionPayload("Require hsCRP above 2 mg/L.", "hsCRP", ">", 2, "mg/L"),
+		},
+		"exclusionCriteria": []map[string]any{},
+		"participants":      150,
+		"studyType":         "parallel",
+		"numberOfArms":      3,
+		"phase":             "Phase III",
+		"therapeuticArea":   "Oncology",
+		"patientPopulation": "Adults",
+	}
+	body, _ := json.Marshal(payload)
+
+	request := httptest.NewRequest(http.MethodPut, "/api/studies/study-0001", bytes.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+	server.Routes().ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", recorder.Code)
 	}
 }
 

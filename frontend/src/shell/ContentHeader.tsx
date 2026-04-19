@@ -16,16 +16,16 @@ export function ContentHeader() {
   const subtitle = active.currentSection ? SECTION_LABELS[active.currentSection] : ''
   const identifier = active.kind === 'new' ? 'New study' : active.studyId
   const isDraft = active.kind === 'new'
+  const combinedTitle = subtitle ? `${identifier} > ${subtitle}` : identifier
 
   return (
     <header className="content-header">
       <div>
         <p className="eyebrow">Study</p>
         <h1>
-          {identifier}
+          {combinedTitle}
           {isDraft ? <span className="draft-badge">Unpublished draft</span> : null}
         </h1>
-        {subtitle ? <p className="content-header-subtitle">{subtitle}</p> : null}
       </div>
     </header>
   )

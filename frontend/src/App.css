@@ -12,7 +12,6 @@
 .workspace-page-header,
 .panel-header,
 .section-header,
-.criterion-editor-header,
 .button-row,
 .header-actions {
   display: flex;
@@ -195,30 +194,99 @@ button:disabled,
   background: #fafcff;
 }
 
-.criterion-editor {
-  display: grid;
-  gap: 0.5rem;
-  padding: 0.9rem;
-  border: 1px solid #d6dce7;
-  border-radius: 0.85rem;
+.criteria-table {
+  width: 100%;
+  border-collapse: collapse;
   background: #fff;
+  border: 1px solid #d6dce7;
+  border-radius: 0.5rem;
+  overflow: hidden;
 }
 
-.criterion-rule-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
+.criteria-table th,
+.criteria-table td {
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid #eef1f6;
 }
 
-.criterion-rule-grid > div {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.dimension-help,
-.criterion-preview {
+.criteria-table thead th {
+  background: #f5f7fb;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: #5b6781;
-  font-size: 0.9rem;
+  font-weight: var(--font-weight-medium);
+}
+
+.criteria-table tr:last-child td {
+  border-bottom: none;
+}
+
+.criteria-table-actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.criteria-row td input,
+.criteria-row td select {
+  width: 100%;
+}
+
+.criteria-inline-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.criteria-inline-controls .criteria-dimension {
+  flex: 1 1 9rem;
+  min-width: 9rem;
+}
+
+.criteria-inline-controls .criteria-operator {
+  flex: 0 0 4.5rem;
+  width: 4.5rem;
+}
+
+.criteria-inline-controls .criteria-value {
+  flex: 0 0 6rem;
+  width: 6rem;
+}
+
+.criteria-inline-controls .criteria-unit {
+  font-size: var(--text-xs);
+  color: #5b6781;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.3rem;
+  background: #eef1f6;
+}
+
+.criteria-inline-errors {
+  display: grid;
+  gap: 0.1rem;
+  margin-top: 0.25rem;
+}
+
+.criteria-empty-state {
+  color: #5b6781;
+  font-size: var(--text-sm);
+  padding: 0.5rem 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .workspace-shell,
@@ -437,8 +505,16 @@ button:disabled,
   .all-studies-layout,
   .workspace-shell,
   .summary-grid,
-  .criterion-rule-grid {
-    grid-template-columns: 1fr;
+  .criteria-inline-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .criteria-inline-controls .criteria-dimension,
+  .criteria-inline-controls .criteria-operator,
+  .criteria-inline-controls .criteria-value {
+    width: 100%;
+    flex: 1 1 auto;
   }
 
   .sidebar {

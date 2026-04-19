@@ -3,7 +3,11 @@ import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import type { ApiErrorResponse, Study, StudyCreateInput, StudyType } from '../types'
-import { nextSection } from './constants'
+import {
+  PHASE_OPTIONS,
+  THERAPEUTIC_AREA_OPTIONS,
+  nextSection,
+} from './constants'
 import { FieldError } from './EligibilityEditor'
 import { extractErrorMessage } from './eligibilityDrafts'
 import { SectionFooter } from './SectionFooter'
@@ -90,24 +94,34 @@ function StudyInformationForm({ initial }: { initial: StudyInformationData }) {
 
   return (
     <form className="form-grid" onSubmit={handleSubmit}>
-      <h2>Study information</h2>
-
       <label htmlFor="phase">Phase</label>
-      <input
+      <select
         id="phase"
-        type="text"
         value={data.phase}
         onChange={(event) => updateField('phase', event.target.value)}
-      />
+      >
+        <option value="">Select a phase</option>
+        {PHASE_OPTIONS.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
       <FieldError message={validationErrors.phase} />
 
       <label htmlFor="therapeuticArea">Therapeutic area</label>
-      <input
+      <select
         id="therapeuticArea"
-        type="text"
         value={data.therapeuticArea}
         onChange={(event) => updateField('therapeuticArea', event.target.value)}
-      />
+      >
+        <option value="">Select a therapeutic area</option>
+        {THERAPEUTIC_AREA_OPTIONS.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
       <FieldError message={validationErrors.therapeuticArea} />
 
       <label htmlFor="patientPopulation">Patient population</label>
@@ -161,6 +175,33 @@ function StudyInformationForm({ initial }: { initial: StudyInformationData }) {
       />
       <FieldError message={validationErrors.numberOfArms} />
 
+      <label htmlFor="firstPatientFirstVisit">First patient, first visit</label>
+      <input
+        id="firstPatientFirstVisit"
+        type="date"
+        value={data.firstPatientFirstVisit}
+        onChange={(event) => updateField('firstPatientFirstVisit', event.target.value)}
+      />
+      <FieldError message={validationErrors.firstPatientFirstVisit} />
+
+      <label htmlFor="lastPatientFirstVisit">Last patient, first visit</label>
+      <input
+        id="lastPatientFirstVisit"
+        type="date"
+        value={data.lastPatientFirstVisit}
+        onChange={(event) => updateField('lastPatientFirstVisit', event.target.value)}
+      />
+      <FieldError message={validationErrors.lastPatientFirstVisit} />
+
+      <label htmlFor="protocolApprovalDate">Protocol approval date</label>
+      <input
+        id="protocolApprovalDate"
+        type="date"
+        value={data.protocolApprovalDate}
+        onChange={(event) => updateField('protocolApprovalDate', event.target.value)}
+      />
+      <FieldError message={validationErrors.protocolApprovalDate} />
+
       <SectionFooter
         mode={ctx.mode}
         busy={isBusy}
@@ -183,5 +224,8 @@ function buildUpdatedStudy(study: Study, info: StudyInformationData): StudyCreat
     phase: info.phase.trim(),
     therapeuticArea: info.therapeuticArea.trim(),
     patientPopulation: info.patientPopulation.trim(),
+    firstPatientFirstVisit: info.firstPatientFirstVisit.trim(),
+    lastPatientFirstVisit: info.lastPatientFirstVisit.trim(),
+    protocolApprovalDate: info.protocolApprovalDate.trim(),
   }
 }

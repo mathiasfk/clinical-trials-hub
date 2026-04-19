@@ -31,6 +31,9 @@ export interface Study {
   phase: string
   therapeuticArea: string
   patientPopulation: string
+  firstPatientFirstVisit: string
+  lastPatientFirstVisit: string
+  protocolApprovalDate: string
 }
 
 export interface StudyCreateInput {
@@ -44,6 +47,9 @@ export interface StudyCreateInput {
   phase: string
   therapeuticArea: string
   patientPopulation: string
+  firstPatientFirstVisit: string
+  lastPatientFirstVisit: string
+  protocolApprovalDate: string
 }
 
 export interface StudyEligibilityInput {

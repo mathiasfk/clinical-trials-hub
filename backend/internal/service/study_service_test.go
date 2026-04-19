@@ -29,8 +29,8 @@ func TestCreateStudyValidation(t *testing.T) {
 	if validationErr.Fields["participants"] == "" {
 		t.Fatal("expected validation error for participants")
 	}
-	if validationErr.Fields["inclusionCriteria"] == "" {
-		t.Fatal("expected validation error for inclusion criteria")
+	if validationErr.Fields["eligibilityCriteria"] == "" {
+		t.Fatal("expected validation error for eligibility criteria")
 	}
 }
 
@@ -50,8 +50,8 @@ func TestCreateStudySuccess(t *testing.T) {
 		Participants:      100,
 		StudyType:         "parallel",
 		NumberOfArms:      2,
-		Phase:             "Phase II",
-		TherapeuticArea:   "Oncology",
+		Phase:             "Phase 2",
+		TherapeuticArea:   "Cardiovascular",
 		PatientPopulation: "Adults with recurrent disease",
 	}
 
@@ -109,8 +109,8 @@ func TestUpdateStudyEligibilitySuccess(t *testing.T) {
 			Participants:      100,
 			StudyType:         "parallel",
 			NumberOfArms:      2,
-			Phase:             "Phase II",
-			TherapeuticArea:   "Oncology",
+			Phase:             "Phase 2",
+			TherapeuticArea:   "Cardiovascular",
 			PatientPopulation: "Adults with recurrent disease",
 		},
 	})
@@ -152,8 +152,8 @@ func TestReplaceStudySuccess(t *testing.T) {
 			Participants:      100,
 			StudyType:         "parallel",
 			NumberOfArms:      2,
-			Phase:             "Phase I",
-			TherapeuticArea:   "Cardiology",
+			Phase:             "Phase 1",
+			TherapeuticArea:   "Cardiovascular",
 			PatientPopulation: "Adults",
 		},
 	})
@@ -171,8 +171,8 @@ func TestReplaceStudySuccess(t *testing.T) {
 		Participants:      150,
 		StudyType:         "parallel",
 		NumberOfArms:      3,
-		Phase:             "Phase II",
-		TherapeuticArea:   "Oncology",
+		Phase:             "Phase 2",
+		TherapeuticArea:   "Diabetes",
 		PatientPopulation: "Adults with advanced solid tumors",
 	})
 	if err != nil {
@@ -184,7 +184,7 @@ func TestReplaceStudySuccess(t *testing.T) {
 	if updated.Objectives[0] != "Updated objective" {
 		t.Fatalf("expected updated objective, got %#v", updated.Objectives)
 	}
-	if updated.Phase != "Phase II" {
+	if updated.Phase != "Phase 2" {
 		t.Fatalf("expected updated phase, got %s", updated.Phase)
 	}
 	if updated.Participants != 150 {
@@ -209,8 +209,8 @@ func TestReplaceStudyNotFound(t *testing.T) {
 		Participants:      100,
 		StudyType:         "parallel",
 		NumberOfArms:      2,
-		Phase:             "Phase II",
-		TherapeuticArea:   "Oncology",
+		Phase:             "Phase 2",
+		TherapeuticArea:   "Cardiovascular",
 		PatientPopulation: "Adults",
 	})
 	if err == nil {
@@ -248,8 +248,8 @@ func TestReplaceStudyValidation(t *testing.T) {
 }
 
 func staticIDGenerator(id string) IDGenerator {
-	return func() string {
-		return id
+	return func(_ context.Context) (string, error) {
+		return id, nil
 	}
 }
 

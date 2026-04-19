@@ -25,15 +25,22 @@ const DIMENSIONS: EligibilityDimension[] = [
   },
 ]
 
+const EMPTY_SOA = {
+  firstPatientFirstVisit: '',
+  lastPatientFirstVisit: '',
+  protocolApprovalDate: '',
+}
+
 describe('validateStudyInformation', () => {
   it('accepts a fully-populated study information block', () => {
     const errors = validateStudyInformation({
-      phase: 'Phase II',
-      therapeuticArea: 'Oncology',
+      phase: 'Phase 2',
+      therapeuticArea: 'Cardiovascular',
       patientPopulation: 'Adults',
       studyType: 'parallel',
       participants: 100,
       numberOfArms: 2,
+      ...EMPTY_SOA,
     })
     expect(errors).toEqual({})
   })
@@ -46,6 +53,7 @@ describe('validateStudyInformation', () => {
       studyType: 'parallel',
       participants: 0,
       numberOfArms: null,
+      ...EMPTY_SOA,
     })
     expect(errors.phase).toBeTruthy()
     expect(errors.therapeuticArea).toBeTruthy()
@@ -56,14 +64,75 @@ describe('validateStudyInformation', () => {
 
   it('rejects an invalid study type', () => {
     const errors = validateStudyInformation({
-      phase: 'Phase II',
-      therapeuticArea: 'Oncology',
+      phase: 'Phase 2',
+      therapeuticArea: 'Cardiovascular',
       patientPopulation: 'Adults',
       studyType: 'unknown' as unknown as 'parallel',
       participants: 1,
       numberOfArms: 1,
+      ...EMPTY_SOA,
     })
     expect(errors.studyType).toBeTruthy()
+  })
+
+  it('rejects phase and therapeutic area outside the allow-lists', () => {
+    const errors = validateStudyInformation({
+      phase: 'Phase II',
+      therapeuticArea: 'Oncology',
+      patientPopulation: 'Adults',
+      studyType: 'parallel',
+      participants: 10,
+      numberOfArms: 2,
+      ...EMPTY_SOA,
+    })
+    expect(errors.phase).toBeTruthy()
+    expect(errors.therapeuticArea).toBeTruthy()
+  })
+
+  it('accepts blank SOA milestone dates', () => {
+    const errors = validateStudyInformation({
+      phase: 'Phase 2',
+      therapeuticArea: 'Cardiovascular',
+      patientPopulation: 'Adults',
+      studyType: 'parallel',
+      participants: 10,
+      numberOfArms: 2,
+      firstPatientFirstVisit: '',
+      lastPatientFirstVisit: '',
+      protocolApprovalDate: '',
+    })
+    expect(errors).toEqual({})
+  })
+
+  it('accepts well-formed ISO-8601 SOA milestone dates', () => {
+    const errors = validateStudyInformation({
+      phase: 'Phase 2',
+      therapeuticArea: 'Cardiovascular',
+      patientPopulation: 'Adults',
+      studyType: 'parallel',
+      participants: 10,
+      numberOfArms: 2,
+      firstPatientFirstVisit: '2026-01-15',
+      lastPatientFirstVisit: '2026-06-20',
+      protocolApprovalDate: '2025-12-01',
+    })
+    expect(errors).toEqual({})
+  })
+
+  it('rejects malformed SOA milestone dates', () => {
+    const errors = validateStudyInformation({
+      phase: 'Phase 2',
+      therapeuticArea: 'Cardiovascular',
+      patientPopulation: 'Adults',
+      studyType: 'parallel',
+      participants: 10,
+      numberOfArms: 2,
+      firstPatientFirstVisit: '01/15/2026',
+      lastPatientFirstVisit: '2026-13-40',
+      protocolApprovalDate: '',
+    })
+    expect(errors.firstPatientFirstVisit).toBeTruthy()
+    expect(errors.lastPatientFirstVisit).toBeTruthy()
   })
 })
 
@@ -125,13 +194,44 @@ describe('validateEligibility', () => {
     expect(errors).toEqual({})
   })
 
-  it('requires at least one inclusion and one exclusion criterion', () => {
+  it('accepts inclusion-only criteria lists', () => {
+    const errors = validateEligibility(
+      {
+        inclusionCriteria: [
+          {
+            description: 'hsCRP elevated',
+            deterministicRule: { dimensionId: 'hsCRP', operator: '>', value: 2, unit: 'mg/L' },
+          },
+        ],
+        exclusionCriteria: [],
+      },
+      DIMENSIONS,
+    )
+    expect(errors).toEqual({})
+  })
+
+  it('accepts exclusion-only criteria lists', () => {
+    const errors = validateEligibility(
+      {
+        inclusionCriteria: [],
+        exclusionCriteria: [
+          {
+            description: 'Elderly patients',
+            deterministicRule: { dimensionId: 'age', operator: '>', value: 75 },
+          },
+        ],
+      },
+      DIMENSIONS,
+    )
+    expect(errors).toEqual({})
+  })
+
+  it('requires at least one criterion in total', () => {
     const errors = validateEligibility(
       { inclusionCriteria: [], exclusionCriteria: [] },
       DIMENSIONS,
     )
-    expect(errors.inclusionCriteria).toBeTruthy()
-    expect(errors.exclusionCriteria).toBeTruthy()
+    expect(errors.eligibilityCriteria).toBeTruthy()
   })
 
   it('rejects incomplete deterministic rules', () => {
@@ -168,18 +268,19 @@ describe('validateSection', () => {
       },
       DIMENSIONS,
     )
-    expect(eligibilityErrors.inclusionCriteria).toBeTruthy()
+    expect(eligibilityErrors.eligibilityCriteria).toBeTruthy()
 
     const infoErrors = validateSection(
       {
         section: 'study-information',
         data: {
           phase: '',
-          therapeuticArea: 'X',
+          therapeuticArea: 'Cardiovascular',
           patientPopulation: 'Y',
           studyType: 'parallel',
           participants: 1,
           numberOfArms: 1,
+          ...EMPTY_SOA,
         },
       },
       DIMENSIONS,
@@ -199,6 +300,7 @@ describe('validateStudyForPublish', () => {
           studyType: 'parallel',
           participants: null,
           numberOfArms: null,
+          ...EMPTY_SOA,
         },
         objectives: { objectives: [''] },
         endpoints: { endpoints: [''] },
@@ -215,12 +317,13 @@ describe('validateStudyForPublish', () => {
     const errors = validateStudyForPublish(
       {
         studyInformation: {
-          phase: 'Phase II',
-          therapeuticArea: 'Oncology',
+          phase: 'Phase 2',
+          therapeuticArea: 'Cardiovascular',
           patientPopulation: 'Adults',
           studyType: 'parallel',
           participants: 10,
           numberOfArms: 2,
+          ...EMPTY_SOA,
         },
         objectives: { objectives: ['Evaluate primary endpoint effects'] },
         endpoints: { endpoints: ['Reduction in biomarker at week 12'] },

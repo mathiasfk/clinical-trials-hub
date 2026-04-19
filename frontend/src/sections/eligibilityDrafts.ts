@@ -4,34 +4,29 @@ type RuleOperator = EligibilityCriterion['deterministicRule']['operator']
 
 export const RULE_OPERATORS: RuleOperator[] = ['>', '>=', '<', '<=', '=', '!=']
 
+export type DraftOperator = RuleOperator | ''
+
 export interface CriterionDraft {
   description: string
   dimensionId: string
-  operator: RuleOperator
+  operator: DraftOperator
   value: string
   unit: string
 }
 
-export function createEmptyCriterionDraft(
-  dimensions: EligibilityDimension[],
-): CriterionDraft {
-  const defaultDimension = dimensions[0]
+export function createEmptyCriterionDraft(): CriterionDraft {
   return {
     description: '',
-    dimensionId: defaultDimension?.id ?? '',
-    operator: '>',
+    dimensionId: '',
+    operator: '',
     value: '',
-    unit: defaultDimension?.allowedUnits[0] ?? '',
+    unit: '',
   }
 }
 
 export function criteriaToDrafts(
   criteria: EligibilityCriterion[],
-  dimensions: EligibilityDimension[],
 ): CriterionDraft[] {
-  if (criteria.length === 0) {
-    return dimensions.length > 0 ? [createEmptyCriterionDraft(dimensions)] : []
-  }
   return criteria.map((criterion) => ({
     description: criterion.description,
     dimensionId: criterion.deterministicRule.dimensionId,
@@ -46,7 +41,7 @@ export function draftsToCriteria(drafts: CriterionDraft[]): EligibilityCriterion
     description: draft.description.trim(),
     deterministicRule: {
       dimensionId: draft.dimensionId,
-      operator: draft.operator,
+      operator: draft.operator as RuleOperator,
       value: draft.value.trim() === '' ? Number.NaN : Number(draft.value),
       unit: draft.unit || undefined,
     },
