@@ -1,6 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import {
+  PHASE_OPTIONS,
+  STUDY_TYPE_OPTIONS,
+  THERAPEUTIC_AREA_OPTIONS,
+  type PhaseOption,
+  type StudyTypeOption,
+  type TherapeuticAreaOption,
+} from '../sections/constants'
 import type { Study } from '../types'
 
 interface AllStudiesPageProps {
@@ -17,10 +25,38 @@ export function AllStudiesPage({
   onRefreshStudies,
 }: AllStudiesPageProps) {
   const navigate = useNavigate()
+  const [idQuery, setIdQuery] = useState('')
+  const [therapeuticArea, setTherapeuticArea] = useState<'All' | TherapeuticAreaOption>('All')
+  const [phase, setPhase] = useState<'All' | PhaseOption>('All')
+  const [studyType, setStudyType] = useState<'All' | StudyTypeOption>('All')
+
+  const filteredStudies = useMemo(() => {
+    const q = idQuery.trim().toLowerCase()
+    return studies.filter((study) => {
+      const idOk = q === '' || study.id.toLowerCase().includes(q)
+      const areaOk = therapeuticArea === 'All' || study.therapeuticArea === therapeuticArea
+      const phaseOk = phase === 'All' || study.phase === phase
+      const typeOk = studyType === 'All' || study.studyType === studyType
+      return idOk && areaOk && phaseOk && typeOk
+    })
+  }, [studies, idQuery, therapeuticArea, phase, studyType])
+
+  const hasActiveFilter =
+    idQuery.trim() !== '' ||
+    therapeuticArea !== 'All' ||
+    phase !== 'All' ||
+    studyType !== 'All'
 
   useEffect(() => {
     void onRefreshStudies()
   }, [onRefreshStudies])
+
+  function clearFilters() {
+    setIdQuery('')
+    setTherapeuticArea('All')
+    setPhase('All')
+    setStudyType('All')
+  }
 
   return (
     <div className="page">
@@ -44,7 +80,11 @@ export function AllStudiesPage({
       <section className="panel">
         <header className="panel-header">
           <h2>Registered studies</h2>
-          <span className="panel-badge">{studies.length} studies</span>
+          <span className="panel-badge">
+            {hasActiveFilter
+              ? `${filteredStudies.length} of ${studies.length} studies`
+              : `${studies.length} studies`}
+          </span>
         </header>
 
         {loadError ? <p className="error-message">{loadError}</p> : null}
@@ -54,8 +94,82 @@ export function AllStudiesPage({
           <p>No studies available yet. Click "New study" to start a registration.</p>
         ) : null}
 
+        {studies.length > 0 ? (
+          <>
+            <div className="study-filter-bar">
+              <div className="filter-field">
+                <label htmlFor="all-studies-filter-study-id">Study ID</label>
+                <input
+                  id="all-studies-filter-study-id"
+                  type="search"
+                  placeholder="Search by study ID"
+                  value={idQuery}
+                  onChange={(e) => setIdQuery(e.target.value)}
+                />
+              </div>
+              <div className="filter-field">
+                <label htmlFor="all-studies-filter-therapeutic-area">Therapeutic area</label>
+                <select
+                  id="all-studies-filter-therapeutic-area"
+                  value={therapeuticArea}
+                  onChange={(e) =>
+                    setTherapeuticArea(e.target.value as 'All' | TherapeuticAreaOption)
+                  }
+                >
+                  <option value="All">All</option>
+                  {THERAPEUTIC_AREA_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-field">
+                <label htmlFor="all-studies-filter-phase">Phase</label>
+                <select
+                  id="all-studies-filter-phase"
+                  value={phase}
+                  onChange={(e) => setPhase(e.target.value as 'All' | PhaseOption)}
+                >
+                  <option value="All">All</option>
+                  {PHASE_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-field">
+                <label htmlFor="all-studies-filter-study-type">Study type</label>
+                <select
+                  id="all-studies-filter-study-type"
+                  value={studyType}
+                  onChange={(e) => setStudyType(e.target.value as 'All' | StudyTypeOption)}
+                >
+                  <option value="All">All</option>
+                  {STUDY_TYPE_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {hasActiveFilter ? (
+                <div className="study-filter-bar-actions">
+                  <button type="button" className="study-filter-clear" onClick={clearFilters}>
+                    Clear filters
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            {!isLoadingList && studies.length > 0 && filteredStudies.length === 0 ? (
+              <p className="study-filter-empty">No studies match the current filters.</p>
+            ) : null}
+          </>
+        ) : null}
+
         <ul className="study-card-list">
-          {studies.map((study) => {
+          {filteredStudies.map((study) => {
             const hasTherapeuticArea = study.therapeuticArea !== ''
             const hasPatientPopulation = study.patientPopulation !== ''
             const hasFpfv = study.firstPatientFirstVisit !== ''

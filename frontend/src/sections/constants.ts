@@ -1,3 +1,5 @@
+import type { StudyType } from '../types'
+
 export const SECTION_ORDER = [
   'study-information',
   'objectives',
@@ -36,6 +38,10 @@ export function isSectionSlug(value: unknown): value is SectionSlug {
   return typeof value === 'string' && (SECTION_ORDER as readonly string[]).includes(value)
 }
 
+export const STUDY_TYPE_OPTIONS = ['parallel', 'crossover', 'single-arm'] as const satisfies readonly StudyType[]
+
+export type StudyTypeOption = (typeof STUDY_TYPE_OPTIONS)[number]
+
 export const PHASE_OPTIONS = ['Phase 1', 'Phase 2', 'Phase 3', 'Phase 4'] as const
 
 export type PhaseOption = (typeof PHASE_OPTIONS)[number]
@@ -62,4 +68,8 @@ export function isTherapeuticAreaOption(value: unknown): value is TherapeuticAre
     typeof value === 'string' &&
     (THERAPEUTIC_AREA_OPTIONS as readonly string[]).includes(value)
   )
+}
+
+export function isStudyTypeOption(value: unknown): value is StudyTypeOption {
+  return typeof value === 'string' && (STUDY_TYPE_OPTIONS as readonly string[]).includes(value)
 }

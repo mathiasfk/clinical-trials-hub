@@ -68,6 +68,68 @@
   padding: 0;
 }
 
+.study-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-end;
+  margin-top: 1rem;
+}
+
+.study-filter-bar > .filter-field {
+  display: grid;
+  gap: 0.35rem;
+  flex: 1 1 10rem;
+  min-width: 10rem;
+  max-width: 16rem;
+}
+
+.study-filter-bar .filter-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #33415c;
+}
+
+.study-filter-bar input,
+.study-filter-bar select {
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #b8c2d6;
+  border-radius: 0.7rem;
+  background: #fff;
+}
+
+.study-filter-bar-actions {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: flex;
+  align-items: flex-end;
+  min-height: 2.75rem;
+}
+
+.study-filter-clear {
+  border: none;
+  background: transparent;
+  color: #365cb4;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  white-space: nowrap;
+}
+
+.study-filter-clear:hover {
+  color: #1f56aa;
+}
+
+.study-filter-empty {
+  margin-top: 0.75rem;
+  color: #4e4e4e;
+}
+
 .study-card-list {
   display: grid;
   gap: 0.6rem;

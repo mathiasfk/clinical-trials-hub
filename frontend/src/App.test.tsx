@@ -7,9 +7,11 @@ import {
   waitFor,
   within,
 } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
+import { AllStudiesPage } from './pages/AllStudiesPage'
 import type { Study } from './types'
 
 const DIMENSIONS = [
@@ -194,6 +196,174 @@ describe('All studies view', () => {
     const noFpfvLink = screen.getByRole('link', { name: /study-no-fpfv/i })
     expect(noFpfvLink.textContent ?? '').not.toMatch(/FPFV/)
     expect(noFpfvLink.textContent ?? '').not.toMatch(/Not set/i)
+  })
+})
+
+function renderAllStudiesPage(studies: Study[]) {
+  const onRefreshStudies = vi.fn().mockResolvedValue(studies)
+  const view = render(
+    <MemoryRouter>
+      <AllStudiesPage
+        studies={studies}
+        isLoadingList={false}
+        loadError=""
+        onRefreshStudies={onRefreshStudies}
+      />
+    </MemoryRouter>,
+  )
+  return { ...view, onRefreshStudies }
+}
+
+describe('AllStudiesPage filter bar', () => {
+  const STUDY_ONC_P2: Study = {
+    ...SEED_STUDY,
+    id: 'study-onc-p2',
+    therapeuticArea: 'Oncology',
+    phase: 'Phase 2',
+    studyType: 'parallel',
+  }
+  const STUDY_CV_P3: Study = {
+    ...SEED_STUDY,
+    id: 'study-cv-p3',
+    therapeuticArea: 'Cardiovascular',
+    phase: 'Phase 3',
+    studyType: 'crossover',
+  }
+  const STUDY_CV_P2: Study = {
+    ...SEED_STUDY,
+    id: 'study-cv-p2',
+    therapeuticArea: 'Cardiovascular',
+    phase: 'Phase 2',
+    studyType: 'single-arm',
+  }
+  const STUDY_MIXED_ID: Study = {
+    ...SEED_STUDY,
+    id: 'study-MixCase-0001',
+    therapeuticArea: 'Neurology',
+    phase: 'Phase 1',
+    studyType: 'crossover',
+  }
+
+  const FILTER_FIXTURE: Study[] = [STUDY_ONC_P2, STUDY_CV_P3, STUDY_CV_P2, STUDY_MIXED_ID]
+
+  it('renders the four labeled controls with default values', () => {
+    renderAllStudiesPage(FILTER_FIXTURE)
+
+    const idInput = screen.getByLabelText(/^Study ID$/i)
+    expect(idInput).toHaveAttribute('placeholder', 'Search by study ID')
+    expect((idInput as HTMLInputElement).value).toBe('')
+
+    const areaSelect = screen.getByLabelText(/^Therapeutic area$/i) as HTMLSelectElement
+    expect(areaSelect.value).toBe('All')
+
+    const phaseSelect = screen.getByLabelText(/^Phase$/i) as HTMLSelectElement
+    expect(phaseSelect.value).toBe('All')
+
+    const typeSelect = screen.getByLabelText(/^Study type$/i) as HTMLSelectElement
+    expect(typeSelect.value).toBe('All')
+  })
+
+  it('filters study IDs by case-insensitive substring', () => {
+    renderAllStudiesPage(FILTER_FIXTURE)
+
+    fireEvent.change(screen.getByLabelText(/^Study ID$/i), { target: { value: 'onc-p2' } })
+    expect(screen.getByRole('link', { name: /study-onc-p2/i })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /study-cv-p3/i })).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/^Study ID$/i), { target: { value: '' } })
+    expect(screen.getByRole('link', { name: /study-cv-p3/i })).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/^Study ID$/i), { target: { value: 'mixcase' } })
+    expect(screen.getByRole('link', { name: /study-MixCase-0001/i })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /study-onc-p2/i })).not.toBeInTheDocument()
+  })
+
+  it('narrows and restores the list for each dropdown filter', () => {
+    renderAllStudiesPage(FILTER_FIXTURE)
+
+    const areaSelect = screen.getByLabelText(/^Therapeutic area$/i)
+    fireEvent.change(areaSelect, { target: { value: 'Oncology' } })
+    expect(screen.getByRole('link', { name: /study-onc-p2/i })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /study-cv-p3/i })).not.toBeInTheDocument()
+    fireEvent.change(areaSelect, { target: { value: 'All' } })
+    expect(screen.getByRole('link', { name: /study-cv-p3/i })).toBeInTheDocument()
+
+    const phaseSelect = screen.getByLabelText(/^Phase$/i)
+    fireEvent.change(phaseSelect, { target: { value: 'Phase 3' } })
+    expect(screen.getByRole('link', { name: /study-cv-p3/i })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /study-onc-p2/i })).not.toBeInTheDocument()
+    fireEvent.change(phaseSelect, { target: { value: 'All' } })
+
+    const typeSelect = screen.getByLabelText(/^Study type$/i)
+    fireEvent.change(typeSelect, { target: { value: 'crossover' } })
+    expect(screen.getByRole('link', { name: /study-cv-p3/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /study-MixCase-0001/i })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /study-onc-p2/i })).not.toBeInTheDocument()
+    fireEvent.change(typeSelect, { target: { value: 'All' } })
+    expect(screen.getByRole('link', { name: /study-onc-p2/i })).toBeInTheDocument()
+  })
+
+  it('applies AND semantics when phase and therapeutic area are both set', () => {
+    renderAllStudiesPage(FILTER_FIXTURE)
+
+    fireEvent.change(screen.getByLabelText(/^Therapeutic area$/i), { target: { value: 'Oncology' } })
+    fireEvent.change(screen.getByLabelText(/^Phase$/i), { target: { value: 'Phase 2' } })
+    expect(screen.getByRole('link', { name: /study-onc-p2/i })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /study-cv-p2/i })).not.toBeInTheDocument()
+  })
+
+  it('updates the panel count badge for filtered and unfiltered states', () => {
+    renderAllStudiesPage(FILTER_FIXTURE)
+
+    expect(screen.getByText('4 studies')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/^Therapeutic area$/i), { target: { value: 'Oncology' } })
+    expect(screen.getByText('1 of 4 studies')).toBeInTheDocument()
+  })
+
+  it('shows Clear filters only when active and resets all filters', () => {
+    renderAllStudiesPage(FILTER_FIXTURE)
+
+    expect(screen.queryByRole('button', { name: /Clear filters/i })).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/^Study ID$/i), { target: { value: 'x' } })
+    const clear = screen.getByRole('button', { name: /Clear filters/i })
+    expect(clear).toBeInTheDocument()
+
+    fireEvent.click(clear)
+    expect(screen.queryByRole('button', { name: /Clear filters/i })).not.toBeInTheDocument()
+    expect((screen.getByLabelText(/^Study ID$/i) as HTMLInputElement).value).toBe('')
+    expect((screen.getByLabelText(/^Therapeutic area$/i) as HTMLSelectElement).value).toBe('All')
+    expect(screen.getAllByRole('link').filter((l) => l.className.includes('study-card'))).toHaveLength(4)
+  })
+
+  it('shows the filtered-empty message when no studies match, not the catalog-empty message', () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <AllStudiesPage
+          studies={[]}
+          isLoadingList={false}
+          loadError=""
+          onRefreshStudies={vi.fn().mockResolvedValue([])}
+        />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText(/No studies available yet/i)).toBeInTheDocument()
+    expect(screen.queryByText(/No studies match the current filters/i)).not.toBeInTheDocument()
+
+    rerender(
+      <MemoryRouter>
+        <AllStudiesPage
+          studies={FILTER_FIXTURE}
+          isLoadingList={false}
+          loadError=""
+          onRefreshStudies={vi.fn().mockResolvedValue(FILTER_FIXTURE)}
+        />
+      </MemoryRouter>,
+    )
+    fireEvent.change(screen.getByLabelText(/^Study ID$/i), { target: { value: 'no-match-xyz' } })
+    expect(screen.getByText(/No studies match the current filters/i)).toBeInTheDocument()
+    expect(screen.queryByText(/No studies available yet/i)).not.toBeInTheDocument()
   })
 })
 
