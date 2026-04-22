@@ -1,0 +1,357 @@
+basePath: /
+definitions:
+  domain.DeterministicRule:
+    properties:
+      dimensionId:
+        type: string
+      operator:
+        type: string
+      unit:
+        type: string
+      value:
+        type: number
+    type: object
+  domain.DimensionDefinition:
+    properties:
+      allowedUnits:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      displayName:
+        type: string
+      id:
+        type: string
+    type: object
+  domain.EligibilityCriterion:
+    properties:
+      description:
+        type: string
+      deterministicRule:
+        $ref: '#/definitions/domain.DeterministicRule'
+    type: object
+  domain.Study:
+    properties:
+      endpoints:
+        items:
+          type: string
+        type: array
+      exclusionCriteria:
+        items:
+          $ref: '#/definitions/domain.EligibilityCriterion'
+        type: array
+      firstPatientFirstVisit:
+        type: string
+      id:
+        type: string
+      inclusionCriteria:
+        items:
+          $ref: '#/definitions/domain.EligibilityCriterion'
+        type: array
+      lastPatientFirstVisit:
+        type: string
+      numberOfArms:
+        type: integer
+      objectives:
+        items:
+          type: string
+        type: array
+      participants:
+        type: integer
+      patientPopulation:
+        type: string
+      phase:
+        type: string
+      protocolApprovalDate:
+        type: string
+      studyType:
+        type: string
+      therapeuticArea:
+        type: string
+    type: object
+  domain.StudyCreateInput:
+    properties:
+      endpoints:
+        items:
+          type: string
+        type: array
+      exclusionCriteria:
+        items:
+          $ref: '#/definitions/domain.EligibilityCriterion'
+        type: array
+      firstPatientFirstVisit:
+        type: string
+      inclusionCriteria:
+        items:
+          $ref: '#/definitions/domain.EligibilityCriterion'
+        type: array
+      lastPatientFirstVisit:
+        type: string
+      numberOfArms:
+        type: integer
+      objectives:
+        items:
+          type: string
+        type: array
+      participants:
+        type: integer
+      patientPopulation:
+        type: string
+      phase:
+        type: string
+      protocolApprovalDate:
+        type: string
+      studyType:
+        type: string
+      therapeuticArea:
+        type: string
+    type: object
+  domain.StudyEligibilityInput:
+    properties:
+      exclusionCriteria:
+        items:
+          $ref: '#/definitions/domain.EligibilityCriterion'
+        type: array
+      inclusionCriteria:
+        items:
+          $ref: '#/definitions/domain.EligibilityCriterion'
+        type: array
+    type: object
+  http.DimensionsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.DimensionDefinition'
+        type: array
+    type: object
+  http.ErrorResponse:
+    properties:
+      errors:
+        additionalProperties:
+          type: string
+        type: object
+      message:
+        type: string
+    type: object
+  http.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  http.StudyListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.Study'
+        type: array
+    type: object
+  http.StudyResponse:
+    properties:
+      data:
+        $ref: '#/definitions/domain.Study'
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Study registration HTTP API for the Clinical Trials Hub MVP. OpenAPI
+    artifacts are generated under `backend/docs/` for consumers (for example .NET
+    NSwag or Swashbuckle).
+  title: Clinical Trials Hub API
+  version: "1.0"
+paths:
+  /api/eligibility-dimensions:
+    get:
+      description: Returns deterministic-rule dimension metadata (IDs, display names,
+        allowed units).
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.DimensionsResponse'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: List eligibility dimensions
+      tags:
+      - eligibility
+  /api/studies:
+    get:
+      description: Returns all registered studies.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.StudyListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: List studies
+      tags:
+      - studies
+    post:
+      consumes:
+      - application/json
+      description: Creates a new study from a full registration payload. Unknown JSON
+        fields are rejected.
+      parameters:
+      - description: Registration payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/domain.StudyCreateInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.StudyResponse'
+        "400":
+          description: Invalid JSON or validation error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Create study
+      tags:
+      - studies
+  /api/studies/{id}:
+    get:
+      description: Returns a single study including eligibility criteria.
+      parameters:
+      - description: Study ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.StudyResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Get study by ID
+      tags:
+      - studies
+    put:
+      consumes:
+      - application/json
+      description: Replaces the full registration payload for an existing study. Unknown
+        JSON fields are rejected.
+      parameters:
+      - description: Study ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Registration payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/domain.StudyCreateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.StudyResponse'
+        "400":
+          description: Invalid JSON or validation error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Replace study registration
+      tags:
+      - studies
+  /api/studies/{id}/eligibility:
+    put:
+      consumes:
+      - application/json
+      description: Updates inclusion and exclusion criteria only for an existing study.
+      parameters:
+      - description: Study ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Eligibility payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/domain.StudyEligibilityInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.StudyResponse'
+        "400":
+          description: Invalid JSON or validation error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "405":
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Update study eligibility
+      tags:
+      - studies
+  /health:
+    get:
+      description: Liveness probe for the API process.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.HealthResponse'
+      summary: Health check
+      tags:
+      - health
+schemes:
+- http
+swagger: "2.0"

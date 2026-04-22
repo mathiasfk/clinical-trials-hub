@@ -1,0 +1,536 @@
+{
+    "schemes": [
+        "http"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Study registration HTTP API for the Clinical Trials Hub MVP. OpenAPI artifacts are generated under `backend/docs/` for consumers (for example .NET NSwag or Swashbuckle).",
+        "title": "Clinical Trials Hub API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/eligibility-dimensions": {
+            "get": {
+                "description": "Returns deterministic-rule dimension metadata (IDs, display names, allowed units).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "eligibility"
+                ],
+                "summary": "List eligibility dimensions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.DimensionsResponse"
+                        }
+                    },
+                    "405": {
+                        "description": "Method Not Allowed",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/studies": {
+            "get": {
+                "description": "Returns all registered studies.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "studies"
+                ],
+                "summary": "List studies",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.StudyListResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Creates a new study from a full registration payload. Unknown JSON fields are rejected.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "studies"
+                ],
+                "summary": "Create study",
+                "parameters": [
+                    {
+                        "description": "Registration payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.StudyCreateInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/http.StudyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid JSON or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/studies/{id}": {
+            "get": {
+                "description": "Returns a single study including eligibility criteria.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "studies"
+                ],
+                "summary": "Get study by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Study ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.StudyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Replaces the full registration payload for an existing study. Unknown JSON fields are rejected.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "studies"
+                ],
+                "summary": "Replace study registration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Study ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Registration payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.StudyCreateInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.StudyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid JSON or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/studies/{id}/eligibility": {
+            "put": {
+                "description": "Updates inclusion and exclusion criteria only for an existing study.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "studies"
+                ],
+                "summary": "Update study eligibility",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Study ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Eligibility payload",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.StudyEligibilityInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.StudyResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid JSON or validation error",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "405": {
+                        "description": "Method Not Allowed",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/http.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Liveness probe for the API process.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/http.HealthResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "domain.DeterministicRule": {
+            "type": "object",
+            "properties": {
+                "dimensionId": {
+                    "type": "string"
+                },
+                "operator": {
+                    "type": "string"
+                },
+                "unit": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "domain.DimensionDefinition": {
+            "type": "object",
+            "properties": {
+                "allowedUnits": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "description": {
+                    "type": "string"
+                },
+                "displayName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.EligibilityCriterion": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "deterministicRule": {
+                    "$ref": "#/definitions/domain.DeterministicRule"
+                }
+            }
+        },
+        "domain.Study": {
+            "type": "object",
+            "properties": {
+                "endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "exclusionCriteria": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.EligibilityCriterion"
+                    }
+                },
+                "firstPatientFirstVisit": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "inclusionCriteria": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.EligibilityCriterion"
+                    }
+                },
+                "lastPatientFirstVisit": {
+                    "type": "string"
+                },
+                "numberOfArms": {
+                    "type": "integer"
+                },
+                "objectives": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "participants": {
+                    "type": "integer"
+                },
+                "patientPopulation": {
+                    "type": "string"
+                },
+                "phase": {
+                    "type": "string"
+                },
+                "protocolApprovalDate": {
+                    "type": "string"
+                },
+                "studyType": {
+                    "type": "string"
+                },
+                "therapeuticArea": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.StudyCreateInput": {
+            "type": "object",
+            "properties": {
+                "endpoints": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "exclusionCriteria": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.EligibilityCriterion"
+                    }
+                },
+                "firstPatientFirstVisit": {
+                    "type": "string"
+                },
+                "inclusionCriteria": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.EligibilityCriterion"
+                    }
+                },
+                "lastPatientFirstVisit": {
+                    "type": "string"
+                },
+                "numberOfArms": {
+                    "type": "integer"
+                },
+                "objectives": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "participants": {
+                    "type": "integer"
+                },
+                "patientPopulation": {
+                    "type": "string"
+                },
+                "phase": {
+                    "type": "string"
+                },
+                "protocolApprovalDate": {
+                    "type": "string"
+                },
+                "studyType": {
+                    "type": "string"
+                },
+                "therapeuticArea": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.StudyEligibilityInput": {
+            "type": "object",
+            "properties": {
+                "exclusionCriteria": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.EligibilityCriterion"
+                    }
+                },
+                "inclusionCriteria": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.EligibilityCriterion"
+                    }
+                }
+            }
+        },
+        "http.DimensionsResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.DimensionDefinition"
+                    }
+                }
+            }
+        },
+        "http.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "http.StudyListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Study"
+                    }
+                }
+            }
+        },
+        "http.StudyResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/domain.Study"
+                }
+            }
+        }
+    }
+}

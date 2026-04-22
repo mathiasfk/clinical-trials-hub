@@ -55,6 +55,22 @@ go run ./cmd/api
 
 The API runs on `http://localhost:8080` by default.
 
+#### OpenAPI (Swagger) contract
+
+The HTTP contract is generated with [swag](https://github.com/swaggo/swag) and committed under [`backend/docs/`](backend/docs/):
+
+- [`backend/docs/swagger.yaml`](backend/docs/swagger.yaml) — primary handoff for .NET tooling (for example NSwag or Swashbuckle import of an OpenAPI file).
+- [`backend/docs/swagger.json`](backend/docs/swagger.json) — same contract in JSON.
+
+Regenerate after changing handlers or Swag comments (run from the `backend/` directory):
+
+```bash
+cd backend
+go generate ./...
+```
+
+While the API is running, Swagger UI is served at [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html) (trailing `index.html` may be required depending on the browser).
+
 ### Frontend
 
 ```bash
@@ -69,9 +85,14 @@ The Vite dev server proxies `/api` requests to `http://localhost:8080`.
 ## API Endpoints
 
 - `GET /health`
+- `GET /api/eligibility-dimensions`
 - `GET /api/studies`
-- `GET /api/studies/:id`
 - `POST /api/studies`
+- `GET /api/studies/:id`
+- `PUT /api/studies/:id`
+- `PUT /api/studies/:id/eligibility`
+
+For request and response schemas, use the OpenAPI files under `backend/docs/` (see **OpenAPI (Swagger) contract** above).
 
 ## Postgres Compatibility (Phase 2)
 

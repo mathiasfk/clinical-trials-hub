@@ -1,3 +1,11 @@
+// Package main is the HTTP API entrypoint for the Clinical Trials Hub backend.
+//
+// @title                       Clinical Trials Hub API
+// @version                     1.0
+// @description                 Study registration HTTP API for the Clinical Trials Hub MVP. OpenAPI artifacts are generated under `backend/docs/` for consumers (for example .NET NSwag or Swashbuckle).
+// @host                        localhost:8080
+// @BasePath                    /
+// @schemes                     http
 package main
 
 import (
