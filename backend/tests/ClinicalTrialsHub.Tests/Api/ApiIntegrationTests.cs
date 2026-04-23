@@ -26,7 +26,7 @@ public sealed class ApiIntegrationTests
     {
         await using var factory = new ClinicalTrialsApiFactory();
         var client = factory.CreateClient();
-        var response = await client.PostAsync(new Uri("/api/eligibility-dimensions", UriKind.Relative), null);
+        var response = await client.PostAsync(new Uri("/api/v1/eligibility-dimensions", UriKind.Relative), null);
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.MethodNotAllowed));
     }
 
@@ -35,7 +35,7 @@ public sealed class ApiIntegrationTests
     {
         await using var factory = new ClinicalTrialsApiFactory();
         var client = factory.CreateClient();
-        var response = await client.GetAsync(new Uri("/api/eligibility-dimensions", UriKind.Relative));
+        var response = await client.GetAsync(new Uri("/api/v1/eligibility-dimensions", UriKind.Relative));
         response.EnsureSuccessStatusCode();
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.That(doc.RootElement.TryGetProperty("data", out var data), Is.True);
@@ -47,7 +47,7 @@ public sealed class ApiIntegrationTests
     {
         await using var factory = new ClinicalTrialsApiFactory();
         var client = factory.CreateClient();
-        var response = await client.GetAsync(new Uri("/api/studies", UriKind.Relative));
+        var response = await client.GetAsync(new Uri("/api/v1/studies", UriKind.Relative));
         response.EnsureSuccessStatusCode();
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var ids = doc.RootElement.GetProperty("data").EnumerateArray().Select(e => e.GetProperty("id").GetString()!)
@@ -94,14 +94,14 @@ public sealed class ApiIntegrationTests
             protocolApprovalDate = "",
         };
 
-        var create = await client.PostAsJsonAsync("/api/studies", payload);
+        var create = await client.PostAsJsonAsync("/api/v1/studies", payload);
         Assert.That(create.StatusCode, Is.EqualTo(HttpStatusCode.Created));
         using (var createdDoc = JsonDocument.Parse(await create.Content.ReadAsStringAsync()))
         {
             Assert.That(createdDoc.RootElement.GetProperty("data").GetProperty("id").GetString(), Is.EqualTo(expectedId));
         }
 
-        var get = await client.GetAsync(new Uri($"/api/studies/{expectedId}", UriKind.Relative));
+        var get = await client.GetAsync(new Uri($"/api/v1/studies/{expectedId}", UriKind.Relative));
         get.EnsureSuccessStatusCode();
     }
 
@@ -140,7 +140,7 @@ public sealed class ApiIntegrationTests
             protocolApprovalDate = "",
         };
 
-        var response = await client.PostAsJsonAsync("/api/studies", payload);
+        var response = await client.PostAsJsonAsync("/api/v1/studies", payload);
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var errors = doc.RootElement.GetProperty("errors");
@@ -172,7 +172,7 @@ public sealed class ApiIntegrationTests
           "unknownField": true
         }
         """;
-        var response = await client.PostAsync("/api/studies", new StringContent(payload, System.Text.Encoding.UTF8, "application/json"));
+        var response = await client.PostAsync("/api/v1/studies", new StringContent(payload, System.Text.Encoding.UTF8, "application/json"));
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.That(doc.RootElement.GetProperty("message").GetString(), Is.EqualTo("invalid JSON payload"));
@@ -183,7 +183,7 @@ public sealed class ApiIntegrationTests
     {
         await using var factory = new ClinicalTrialsApiFactory();
         var client = factory.CreateClient();
-        var response = await client.GetAsync(new Uri("/api/studies/study-9999", UriKind.Relative));
+        var response = await client.GetAsync(new Uri("/api/v1/studies/study-9999", UriKind.Relative));
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.That(doc.RootElement.GetProperty("message").GetString(), Is.EqualTo("study not found"));
@@ -225,9 +225,9 @@ public sealed class ApiIntegrationTests
             protocolApprovalDate = "",
         };
 
-        var put = await client.PutAsJsonAsync($"/api/studies/{id}", replacement);
+        var put = await client.PutAsJsonAsync($"/api/v1/studies/{id}", replacement);
         put.EnsureSuccessStatusCode();
-        var get = await client.GetAsync(new Uri($"/api/studies/{id}", UriKind.Relative));
+        var get = await client.GetAsync(new Uri($"/api/v1/studies/{id}", UriKind.Relative));
         using var doc = JsonDocument.Parse(await get.Content.ReadAsStringAsync());
         var data = doc.RootElement.GetProperty("data");
         Assert.That(data.GetProperty("objectives")[0].GetString(), Is.EqualTo("new-obj"));
@@ -240,7 +240,7 @@ public sealed class ApiIntegrationTests
         await using var factory = new ClinicalTrialsApiFactory();
         var client = factory.CreateClient();
         var id = "study-0002";
-        var before = JsonDocument.Parse(await (await client.GetAsync($"/api/studies/{id}")).Content.ReadAsStringAsync());
+        var before = JsonDocument.Parse(await (await client.GetAsync($"/api/v1/studies/{id}")).Content.ReadAsStringAsync());
         var objectives = before.RootElement.GetProperty("data").GetProperty("objectives")[0].GetString();
 
         var eligibility = new
@@ -262,10 +262,10 @@ public sealed class ApiIntegrationTests
             exclusionCriteria = Array.Empty<object>(),
         };
 
-        var put = await client.PutAsJsonAsync($"/api/studies/{id}/eligibility", eligibility);
+        var put = await client.PutAsJsonAsync($"/api/v1/studies/{id}/eligibility", eligibility);
         put.EnsureSuccessStatusCode();
 
-        var after = JsonDocument.Parse(await (await client.GetAsync($"/api/studies/{id}")).Content.ReadAsStringAsync());
+        var after = JsonDocument.Parse(await (await client.GetAsync($"/api/v1/studies/{id}")).Content.ReadAsStringAsync());
         var data = after.RootElement.GetProperty("data");
         Assert.That(data.GetProperty("objectives")[0].GetString(), Is.EqualTo(objectives));
         Assert.That(data.GetProperty("inclusionCriteria")[0].GetProperty("description").GetString(), Is.EqualTo("only eligibility"));
@@ -278,13 +278,13 @@ public sealed class ApiIntegrationTests
         await using var factory = new ClinicalTrialsApiFactory();
         var client = factory.CreateClient();
 
-        var bad = new HttpRequestMessage(HttpMethod.Options, "/api/studies");
+        var bad = new HttpRequestMessage(HttpMethod.Options, "/api/v1/studies");
         bad.Headers.Add("Origin", "http://evil.example");
         bad.Headers.Add("Access-Control-Request-Method", "GET");
         var badResp = await client.SendAsync(bad);
         Assert.That(badResp.Headers.Contains("Access-Control-Allow-Origin"), Is.False);
 
-        var good = new HttpRequestMessage(HttpMethod.Options, "/api/studies");
+        var good = new HttpRequestMessage(HttpMethod.Options, "/api/v1/studies");
         good.Headers.Add("Origin", "http://localhost:5173");
         good.Headers.Add("Access-Control-Request-Method", "GET");
         var goodResp = await client.SendAsync(good);
@@ -305,11 +305,11 @@ public sealed class ApiIntegrationTests
         var paths = doc.RootElement.GetProperty("paths");
         Assert.Multiple(() =>
         {
-            Assert.That(paths.TryGetProperty("/api/studies", out _), Is.True);
-            Assert.That(paths.TryGetProperty("/api/studies/{id}", out _), Is.True);
-            Assert.That(paths.TryGetProperty("/api/studies/{id}/eligibility", out _), Is.True);
-            Assert.That(paths.TryGetProperty("/api/studies/{id}/similar-suggestions", out _), Is.True);
-            Assert.That(paths.TryGetProperty("/api/eligibility-dimensions", out _), Is.True);
+            Assert.That(paths.TryGetProperty("/api/v1/studies", out _), Is.True);
+            Assert.That(paths.TryGetProperty("/api/v1/studies/{id}", out _), Is.True);
+            Assert.That(paths.TryGetProperty("/api/v1/studies/{id}/eligibility", out _), Is.True);
+            Assert.That(paths.TryGetProperty("/api/v1/studies/{id}/similar-suggestions", out _), Is.True);
+            Assert.That(paths.TryGetProperty("/api/v1/eligibility-dimensions", out _), Is.True);
             Assert.That(paths.TryGetProperty("/health", out _), Is.True);
         });
     }
@@ -319,7 +319,7 @@ public sealed class ApiIntegrationTests
     {
         await using var factory = new ClinicalTrialsApiFactory();
         var client = factory.CreateClient();
-        var response = await client.GetAsync(new Uri("/api/studies/study-9999/similar-suggestions", UriKind.Relative));
+        var response = await client.GetAsync(new Uri("/api/v1/studies/study-9999/similar-suggestions", UriKind.Relative));
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
     }
 
@@ -328,9 +328,9 @@ public sealed class ApiIntegrationTests
     {
         await using var factory = new ClinicalTrialsApiFactory();
         var client = factory.CreateClient();
-        var zero = await client.GetAsync(new Uri("/api/studies/study-0001/similar-suggestions?limit=0", UriKind.Relative));
+        var zero = await client.GetAsync(new Uri("/api/v1/studies/study-0001/similar-suggestions?limit=0", UriKind.Relative));
         Assert.That(zero.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-        var eleven = await client.GetAsync(new Uri("/api/studies/study-0001/similar-suggestions?limit=11", UriKind.Relative));
+        var eleven = await client.GetAsync(new Uri("/api/v1/studies/study-0001/similar-suggestions?limit=11", UriKind.Relative));
         Assert.That(eleven.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
@@ -339,7 +339,7 @@ public sealed class ApiIntegrationTests
     {
         await using var factory = new ClinicalTrialsApiFactory();
         var client = factory.CreateClient();
-        var response = await client.GetAsync(new Uri("/api/studies/study-0001/similar-suggestions?limit=3", UriKind.Relative));
+        var response = await client.GetAsync(new Uri("/api/v1/studies/study-0001/similar-suggestions?limit=3", UriKind.Relative));
         response.EnsureSuccessStatusCode();
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var data = doc.RootElement.GetProperty("data");
@@ -374,10 +374,10 @@ public sealed class ApiIntegrationTests
         };
 
         // study-0003 shares therapeutic area/phase/type with study-0001 and is ranked before study-0002 for similarity.
-        var put = await client.PutAsJsonAsync("/api/studies/study-0003/eligibility", eligibility);
+        var put = await client.PutAsJsonAsync("/api/v1/studies/study-0003/eligibility", eligibility);
         put.EnsureSuccessStatusCode();
 
-        var response = await client.GetAsync(new Uri("/api/studies/study-0001/similar-suggestions?limit=3", UriKind.Relative));
+        var response = await client.GetAsync(new Uri("/api/v1/studies/study-0001/similar-suggestions?limit=3", UriKind.Relative));
         response.EnsureSuccessStatusCode();
         using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var data = doc.RootElement.GetProperty("data");

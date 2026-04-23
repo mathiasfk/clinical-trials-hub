@@ -7,13 +7,13 @@ public static class EligibilityEndpoints
     public static void MapEligibilityEndpoints(this WebApplication app)
     {
         app.MapMethods(
-                "/api/eligibility-dimensions",
+                "/api/v1/eligibility-dimensions",
                 [HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch, HttpMethods.Delete],
                 () => Results.StatusCode(StatusCodes.Status405MethodNotAllowed))
             .ExcludeFromDescription();
 
         app.MapGet(
-                "/api/eligibility-dimensions",
+                "/api/v1/eligibility-dimensions",
                 (StudyService studyService) => Results.Ok(studyService.GetEligibilityDimensions()))
             .WithName("GetEligibilityDimensions")
             .WithTags("eligibility")

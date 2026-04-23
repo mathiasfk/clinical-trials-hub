@@ -69,7 +69,7 @@ With the API on **8080** and the UI on **5173**:
 
 1. Start the API: `cd backend && dotnet run --project src/ClinicalTrialsHub.Api/ClinicalTrialsHub.Api.csproj`
 2. Start the UI with the API URL: `cd frontend && VITE_API_URL=http://localhost:8080 pnpm dev`
-3. In the browser: open **All Studies**, complete the new-study wizard through **Publish**, edit eligibility and **Save**, and confirm the assistant can load another study by id (`GET /api/studies/{id}`).
+3. In the browser: open **All Studies**, complete the new-study wizard through **Publish**, edit eligibility and **Save**, and confirm the assistant can load another study by id (`GET /api/v1/studies/{id}`).
 4. Open `http://localhost:8080/scalar/v1` and confirm every HTTP operation is listed.
 
 ### Frontend
@@ -84,7 +84,7 @@ The Vite dev server is at **`http://localhost:5173`** and proxies `/api` to **`h
 
 ### API contract and docs
 
-When the API is running, OpenAPI JSON is served at `/openapi/v1.json` and the Scalar reference UI at `/scalar/v1` (same host and port as the API).
+When the API is running, OpenAPI JSON is served at `/openapi/v1.json` (OpenAPI **document** name) and the Scalar reference UI at `/scalar/v1` (same host and port as the API). Versioned REST resources live under `/api/v1/...`, not under `/openapi/...`.
 
 Committed OpenAPI snapshots (optional handoff for tooling) live under [`backend/docs/`](backend/docs/):
 
@@ -94,12 +94,13 @@ Committed OpenAPI snapshots (optional handoff for tooling) live under [`backend/
 ## API Endpoints
 
 - `GET /health`
-- `GET /api/eligibility-dimensions`
-- `GET /api/studies`
-- `POST /api/studies`
-- `GET /api/studies/:id`
-- `PUT /api/studies/:id`
-- `PUT /api/studies/:id/eligibility`
+- `GET /api/v1/eligibility-dimensions`
+- `GET /api/v1/studies`
+- `POST /api/v1/studies`
+- `GET /api/v1/studies/:id`
+- `PUT /api/v1/studies/:id`
+- `PUT /api/v1/studies/:id/eligibility`
+- `GET /api/v1/studies/:id/similar-suggestions`
 
 For request and response schemas, use the running API (`/openapi/v1.json`) or the files under `backend/docs/` above.
 

@@ -17,7 +17,7 @@ export interface UseOtherStudiesResult {
  * section.
  *
  * The assistant's **Suggest criteria based on similar studies** skill does not
- * depend on this list; it calls `GET /api/studies/{id}/similar-suggestions`
+ * depend on this list; it calls `GET /api/v1/studies/{id}/similar-suggestions`
  * instead. This hook remains useful to pre-populate `otherStudies` for
  * **Copy criteria from another study** (study picker and duplicate filtering).
  *

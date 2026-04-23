@@ -5,23 +5,23 @@ TBD - created by archiving change move-similarity-to-backend. Update Purpose aft
 ## Requirements
 ### Requirement: Backend exposes a study similarity suggestions endpoint
 
-The system SHALL expose a read-only HTTP endpoint `GET /api/studies/{id}/similar-suggestions` that returns up to `limit` concrete eligibility criterion suggestions drawn from other registered studies, ranked by the deterministic similarity heuristic defined below. The endpoint SHALL accept:
+The system SHALL expose a read-only HTTP endpoint `GET /api/v1/studies/{id}/similar-suggestions` that returns up to `limit` concrete eligibility criterion suggestions drawn from other registered studies, ranked by the deterministic similarity heuristic defined below. The endpoint SHALL accept:
 
 - Path parameter `id`: the target study's identifier (required, non-blank). Unknown ids SHALL return `404 Not Found` using the platform's standard error response shape.
 - Query parameter `limit`: integer, default `3`, minimum `1`, maximum `10`. Out-of-range values SHALL return `400 Bad Request`.
 
-The response body SHALL be a JSON object of the form `{ "data": [ SuggestedCriterion, ... ] }`, where each `SuggestedCriterion` contains `sourceStudyId` (string), `group` (`"inclusion"` | `"exclusion"`), `criterionIndex` (integer, zero-based position in the source study's group list), and `criterion` (the same `EligibilityCriterion` shape returned by `GET /api/studies/{id}`). The response SHALL be deterministic for the same target study and corpus.
+The response body SHALL be a JSON object of the form `{ "data": [ SuggestedCriterion, ... ] }`, where each `SuggestedCriterion` contains `sourceStudyId` (string), `group` (`"inclusion"` | `"exclusion"`), `criterionIndex` (integer, zero-based position in the source study's group list), and `criterion` (the same `EligibilityCriterion` shape returned by `GET /api/v1/studies/{id}`). The response SHALL be deterministic for the same target study and corpus.
 
 #### Scenario: Endpoint returns up to the requested number of suggestions
-- **WHEN** a client issues `GET /api/studies/study-0001/similar-suggestions?limit=3` against a corpus containing at least one other study with at least one criterion not already present on `study-0001`
+- **WHEN** a client issues `GET /api/v1/studies/study-0001/similar-suggestions?limit=3` against a corpus containing at least one other study with at least one criterion not already present on `study-0001`
 - **THEN** the endpoint SHALL respond `200 OK` with a `data` array of at most three items, each carrying a `sourceStudyId` other than `study-0001` and a `criterion` that is not structurally equal to any criterion already on `study-0001`
 
 #### Scenario: Endpoint returns 404 for an unknown target study
-- **WHEN** a client issues `GET /api/studies/study-9999/similar-suggestions` and no study with that id exists
+- **WHEN** a client issues `GET /api/v1/studies/study-9999/similar-suggestions` and no study with that id exists
 - **THEN** the endpoint SHALL respond `404 Not Found` with the platform's standard error response body
 
 #### Scenario: Endpoint rejects invalid limit values
-- **WHEN** a client issues `GET /api/studies/study-0001/similar-suggestions?limit=0` or `limit=11`
+- **WHEN** a client issues `GET /api/v1/studies/study-0001/similar-suggestions?limit=0` or `limit=11`
 - **THEN** the endpoint SHALL respond `400 Bad Request` with a validation error describing the `limit` field
 
 #### Scenario: Endpoint returns an empty list when no candidates remain

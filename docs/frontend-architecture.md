@@ -5,7 +5,7 @@ runtime stack, how the source tree is organised, how state and data flow
 through the app, and the main design choices behind the structure.
 
 The frontend is a single-page React application that talks to the Go backend
-over a small REST surface (`/api/studies`, `/api/eligibility-dimensions`). It
+over a small REST surface (`/api/v1/studies`, `/api/v1/eligibility-dimensions`). It
 exposes two primary flows on top of that API:
 
 1. Browsing and filtering the registered study catalog.
@@ -335,17 +335,17 @@ sequenceDiagram
     participant SW as StudyWorkspace
     participant Sec as Section (e.g. Objectives)
     participant API as backend /api
-    App->>API: GET /api/studies, /api/eligibility-dimensions (on mount)
+    App->>API: GET /api/v1/studies, /api/v1/eligibility-dimensions (on mount)
     API-->>App: studies[], dimensions[]
     U->>App: navigate /studies/study-0001/objectives
     App->>SW: mount <StudyWorkspace studyId="study-0001">
-    SW->>API: GET /api/studies/study-0001
+    SW->>API: GET /api/v1/studies/study-0001
     API-->>SW: Study
     SW->>Sec: Outlet ctx: {mode:'edit', study, replaceStudy, ...}
     U->>Sec: edit objective, submit
     Sec->>Sec: validateObjectives(data)
     Sec->>SW: replaceStudy(payload)
-    SW->>API: PUT /api/studies/study-0001
+    SW->>API: PUT /api/v1/studies/study-0001
     API-->>SW: updated Study
     SW->>App: onStudyUpdated(updated) → upsertStudyInList
     SW-->>Sec: re-render with updated study
@@ -371,7 +371,7 @@ sequenceDiagram
         SumS-->>U: list of incomplete sections with deep links
     else all valid
         SumS->>NSL: publishDraft()
-        NSL->>API: POST /api/studies
+        NSL->>API: POST /api/v1/studies
         API-->>NSL: created Study
         NSL->>App: onStudyCreated → upsertStudyInList
         NSL->>DR: reset
@@ -502,7 +502,7 @@ flowchart LR
     CTX -.from.-> ELI
 
     ELI --> UOS[useOtherStudies]
-    UOS -->|fetch| API[(GET /api/studies)]
+    UOS -->|fetch| API[(GET /api/v1/studies)]
 
     ACD -->|onAddCriterion| ELI
 ```

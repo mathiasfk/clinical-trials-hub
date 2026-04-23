@@ -11,7 +11,7 @@ heuristic in full so reviewers know exactly how suggestions are made.
 - No LLM call.
 - No embeddings, no vector database, no feature hashing.
 - No external service or network call other than the existing
-  `GET /api/studies` and `GET /api/eligibility-dimensions` endpoints.
+  `GET /api/v1/studies` and `GET /api/v1/eligibility-dimensions` endpoints.
 - All scoring and selection run in the browser, in pure TypeScript, in
   `frontend/src/assistant/similarity.ts`.
 

@@ -23,19 +23,19 @@ async function parseResponse<T>(response: Response): Promise<T> {
 }
 
 export async function listStudies(): Promise<Study[]> {
-  const response = await fetch(apiUrl('/api/studies'))
+  const response = await fetch(apiUrl('/api/v1/studies'))
   const payload = await parseResponse<{ data: Study[] }>(response)
   return payload.data
 }
 
 export async function getStudyById(id: string): Promise<Study> {
-  const response = await fetch(apiUrl(`/api/studies/${id}`))
+  const response = await fetch(apiUrl(`/api/v1/studies/${id}`))
   const payload = await parseResponse<{ data: Study }>(response)
   return payload.data
 }
 
 export async function createStudy(input: StudyCreateInput): Promise<Study> {
-  const response = await fetch(apiUrl('/api/studies'), {
+  const response = await fetch(apiUrl('/api/v1/studies'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -47,7 +47,7 @@ export async function createStudy(input: StudyCreateInput): Promise<Study> {
 }
 
 export async function replaceStudy(id: string, input: StudyCreateInput): Promise<Study> {
-  const response = await fetch(apiUrl(`/api/studies/${id}`), {
+  const response = await fetch(apiUrl(`/api/v1/studies/${id}`), {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ export async function replaceStudy(id: string, input: StudyCreateInput): Promise
 }
 
 export async function updateStudyEligibility(id: string, input: StudyEligibilityInput): Promise<Study> {
-  const response = await fetch(apiUrl(`/api/studies/${id}/eligibility`), {
+  const response = await fetch(apiUrl(`/api/v1/studies/${id}/eligibility`), {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -71,7 +71,7 @@ export async function updateStudyEligibility(id: string, input: StudyEligibility
 }
 
 export async function listEligibilityDimensions(): Promise<EligibilityDimension[]> {
-  const response = await fetch(apiUrl('/api/eligibility-dimensions'))
+  const response = await fetch(apiUrl('/api/v1/eligibility-dimensions'))
   const payload = await parseResponse<{ data: EligibilityDimension[] }>(response)
   return payload.data
 }
@@ -82,7 +82,7 @@ export async function getSimilarSuggestions(
 ): Promise<SuggestedCriterion[]> {
   const limit = options?.limit ?? 3
   const response = await fetch(
-    apiUrl(`/api/studies/${encodeURIComponent(studyId)}/similar-suggestions?limit=${limit}`),
+    apiUrl(`/api/v1/studies/${encodeURIComponent(studyId)}/similar-suggestions?limit=${limit}`),
   )
   const payload = await parseResponse<{ data: SuggestedCriterion[] }>(response)
   return payload.data

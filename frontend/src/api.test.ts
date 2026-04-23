@@ -36,7 +36,7 @@ describe('getSimilarSuggestions', () => {
 
     await expect(getSimilarSuggestions('study-0001')).resolves.toEqual(data)
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/studies/study-0001/similar-suggestions?limit=3'),
+      expect.stringContaining('/api/v1/studies/study-0001/similar-suggestions?limit=3'),
     )
   })
 

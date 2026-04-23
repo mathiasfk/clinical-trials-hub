@@ -62,7 +62,7 @@ export interface ApiErrorResponse {
   errors?: Record<string, string>
 }
 
-/** One criterion suggestion from `GET /api/studies/{id}/similar-suggestions`. */
+/** One criterion suggestion from `GET /api/v1/studies/{id}/similar-suggestions`. */
 export interface SuggestedCriterion {
   sourceStudyId: string
   group: 'inclusion' | 'exclusion'

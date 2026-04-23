@@ -49,11 +49,11 @@ flowchart LR
 | Method | Path | Notes |
 |--------|------|--------|
 | GET | `/health` | JSON `{ "status": "ok" }` (via health checks + custom writer). |
-| GET | `/api/eligibility-dimensions` | Registry payload under `data`. Non-GET methods on the same path return **405**. |
-| GET/POST | `/api/studies` | List / create. |
-| GET/PUT | `/api/studies/{id}` | Read / full replace. |
-| PUT | `/api/studies/{id}/eligibility` | Inclusion/exclusion only. |
-| GET | `/api/studies/{id}/similar-suggestions` | Read-only ranked criterion suggestions for the assistant (`limit` 1–10, default 3). Heuristic: `StudySimilarityScorer` + walk order in `SimilaritySuggestionService`. |
+| GET | `/api/v1/eligibility-dimensions` | Registry payload under `data`. Non-GET methods on the same path return **405**. |
+| GET/POST | `/api/v1/studies` | List / create. |
+| GET/PUT | `/api/v1/studies/{id}` | Read / full replace. |
+| PUT | `/api/v1/studies/{id}/eligibility` | Inclusion/exclusion only. |
+| GET | `/api/v1/studies/{id}/similar-suggestions` | Read-only ranked criterion suggestions for the assistant (`limit` 1–10, default 3). Heuristic: `StudySimilarityScorer` + walk order in `SimilaritySuggestionService`. |
 
 Errors match the legacy contract: validation **400** with `{ "message": "validation failed", "errors": { ... } }`, JSON issues **400** with `{ "message": "invalid JSON payload" }`, missing resources **404** with `{ "message": "<resource> not found" }`.
 
@@ -61,7 +61,7 @@ Errors match the legacy contract: validation **400** with `{ "message": "validat
 
 ## 4. OpenAPI stack
 
-- **Runtime:** `Microsoft.AspNetCore.OpenApi` — `AddOpenApi` + `MapOpenApi()` → `/openapi/v1.json`.
+- **Runtime:** `Microsoft.AspNetCore.OpenApi` — `AddOpenApi` + `MapOpenApi()` → `/openapi/v1.json` (document name; REST routes use `/api/v1/...`).
 - **Interactive UI:** `Scalar.AspNetCore` → `/scalar/v1` (document URL pattern aligned with OpenAPI route).
 - **Build-time artifact:** `Microsoft.Extensions.ApiDescription.Server` writes under `backend/docs/`; `openapi.json` is kept in sync for tooling.
 

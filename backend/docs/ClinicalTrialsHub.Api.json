@@ -6,7 +6,7 @@
     "version": "1.0"
   },
   "paths": {
-    "/api/eligibility-dimensions": {
+    "/api/v1/eligibility-dimensions": {
       "get": {
         "tags": [
           "eligibility"
@@ -31,7 +31,7 @@
         }
       }
     },
-    "/api/studies": {
+    "/api/v1/studies": {
       "get": {
         "tags": [
           "studies"
@@ -93,7 +93,7 @@
         }
       }
     },
-    "/api/studies/{id}": {
+    "/api/v1/studies/{id}": {
       "get": {
         "tags": [
           "studies"
@@ -205,7 +205,7 @@
         }
       }
     },
-    "/api/studies/{id}/eligibility": {
+    "/api/v1/studies/{id}/eligibility": {
       "put": {
         "tags": [
           "studies"
@@ -267,7 +267,7 @@
         }
       }
     },
-    "/api/studies/{id}/similar-suggestions": {
+    "/api/v1/studies/{id}/similar-suggestions": {
       "get": {
         "tags": [
           "studies"

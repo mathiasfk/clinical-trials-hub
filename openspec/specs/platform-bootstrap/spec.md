@@ -75,16 +75,16 @@ All newly created repository artifacts in this change MUST use English, includin
 
 ### Requirement: Backend HTTP contract is preserved across the .NET port
 
-The system SHALL expose the same HTTP API as the previous Go backend, byte-compatible from the front-end's perspective. The new .NET backend SHALL preserve every path, method, status code, request body shape, response body shape, and JSON casing currently exercised by the front-end (`frontend/src/api.ts` and `frontend/src/types.ts`). JSON SHALL be serialized in `camelCase`, responses SHALL wrap successful payloads in a `{ "data": ... }` envelope, and error responses SHALL use the `{ "message": <string>, "errors"?: { <field>: <message> } }` envelope. Unknown JSON fields on any request body SHALL be rejected with HTTP `400` and a `"message": "invalid JSON payload"` error envelope. The legacy Go-generated artifacts at `backend/docs/swagger.{json,yaml}` are treated as an initial reference only and MAY be deleted when the native .NET OpenAPI artifact is in place.
+The system SHALL expose the same HTTP request/response contract as the previous Go-backed MVP, byte-compatible from the front-end's perspective aside from the **`/api/v1`** REST path prefix (for example `/api/v1/studies` instead of `/api/studies`). The .NET backend SHALL preserve every method, status code, request body shape, response body shape, and JSON casing currently exercised by the front-end (`frontend/src/api.ts` and `frontend/src/types.ts`). JSON SHALL be serialized in `camelCase`, responses SHALL wrap successful payloads in a `{ "data": ... }` envelope, and error responses SHALL use the `{ "message": <string>, "errors"?: { <field>: <message> } }` envelope. Unknown JSON fields on any request body SHALL be rejected with HTTP `400` and a `"message": "invalid JSON payload"` error envelope. The legacy Go-generated artifacts at `backend/docs/swagger.{json,yaml}` are treated as an initial reference only and MAY be deleted when the native .NET OpenAPI artifact is in place.
 
-#### Scenario: Front-end calls succeed without modification
+#### Scenario: Front-end calls succeed against the versioned REST surface
 
-- **WHEN** the existing front-end (`frontend/src/api.ts` plus the typed shapes in `frontend/src/types.ts`) issues calls against the new .NET backend
-- **THEN** every call SHALL succeed with the same status codes, response shapes, and field names it received from the previous Go backend
+- **WHEN** the front-end (`frontend/src/api.ts` plus the typed shapes in `frontend/src/types.ts`) issues calls against the .NET backend using the `/api/v1/...` routes
+- **THEN** every call SHALL succeed with the same status codes, response shapes, and field names documented in the committed OpenAPI artifact
 
 #### Scenario: Backend rejects unknown JSON fields
 
-- **WHEN** a client sends a `POST /api/studies`, `PUT /api/studies/{id}`, or `PUT /api/studies/{id}/eligibility` request whose body contains a property not declared on the corresponding input type
+- **WHEN** a client sends a `POST /api/v1/studies`, `PUT /api/v1/studies/{id}`, or `PUT /api/v1/studies/{id}/eligibility` request whose body contains a property not declared on the corresponding input type
 - **THEN** the backend SHALL respond with HTTP `400` and a body of `{ "message": "invalid JSON payload" }` and SHALL NOT mutate any persisted study
 
 #### Scenario: Health endpoint returns the documented shape

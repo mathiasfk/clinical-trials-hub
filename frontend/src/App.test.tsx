@@ -81,10 +81,10 @@ function installFetch(handler: FetchHandler) {
 
 function defaultHandler(studies: Study[] = [], extra?: Partial<Record<string, FetchHandler>>): FetchHandler {
   return (url, init) => {
-    if (url === '/api/studies' && (!init || init.method === undefined || init.method === 'GET')) {
+    if (url === '/api/v1/studies' && (!init || init.method === undefined || init.method === 'GET')) {
       return jsonResponse({ data: studies })
     }
-    if (url === '/api/eligibility-dimensions') {
+    if (url === '/api/v1/eligibility-dimensions') {
       return jsonResponse({ data: DIMENSIONS })
     }
     if (extra) {
@@ -401,7 +401,7 @@ describe('New study wizard', () => {
     const createdStudy: Study = { ...SEED_STUDY, id: 'study-2001' }
     installFetch(
       defaultHandler([], {
-        '/api/studies/study-2001': (_url, init) => {
+        '/api/v1/studies/study-2001': (_url, init) => {
           if (init?.method === undefined || init.method === 'GET') {
             return jsonResponse({ data: createdStudy })
           }
@@ -412,16 +412,16 @@ describe('New study wizard', () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
       const method = init?.method ?? 'GET'
-      if (url === '/api/studies' && method === 'GET') {
+      if (url === '/api/v1/studies' && method === 'GET') {
         return jsonResponse({ data: [] })
       }
-      if (url === '/api/eligibility-dimensions') {
+      if (url === '/api/v1/eligibility-dimensions') {
         return jsonResponse({ data: DIMENSIONS })
       }
-      if (url === '/api/studies' && method === 'POST') {
+      if (url === '/api/v1/studies' && method === 'POST') {
         return jsonResponse({ data: createdStudy }, 201)
       }
-      if (url === '/api/studies/study-2001' && method === 'GET') {
+      if (url === '/api/v1/studies/study-2001' && method === 'GET') {
         return jsonResponse({ data: createdStudy })
       }
       throw new Error(`Unexpected request: ${method} ${url}`)
@@ -481,7 +481,7 @@ describe('New study wizard', () => {
     await waitFor(() => {
       const postCall = fetchMock.mock.calls.find(
         ([url, init]) =>
-          String(url) === '/api/studies' &&
+          String(url) === '/api/v1/studies' &&
           (init as RequestInit | undefined)?.method === 'POST',
       )
       expect(postCall).toBeDefined()
@@ -512,7 +512,7 @@ describe('New study wizard', () => {
 
     const postCalls = fetchMock.mock.calls.filter(
       ([url, init]) =>
-        String(url) === '/api/studies' &&
+        String(url) === '/api/v1/studies' &&
         (init as RequestInit | undefined)?.method === 'POST',
     )
     expect(postCalls).toHaveLength(0)
@@ -549,13 +549,13 @@ describe('Edit study summary', () => {
   function editHandler(study: Study): FetchHandler {
     return (url, init) => {
       const method = init?.method ?? 'GET'
-      if (url === '/api/studies' && method === 'GET') {
+      if (url === '/api/v1/studies' && method === 'GET') {
         return jsonResponse({ data: [study] })
       }
-      if (url === '/api/eligibility-dimensions') {
+      if (url === '/api/v1/eligibility-dimensions') {
         return jsonResponse({ data: DIMENSIONS })
       }
-      if (url === `/api/studies/${study.id}` && method === 'GET') {
+      if (url === `/api/v1/studies/${study.id}` && method === 'GET') {
         return jsonResponse({ data: study })
       }
       throw new Error(`Unexpected request: ${method} ${url}`)
@@ -618,20 +618,20 @@ describe('Edit study summary', () => {
     expect(putCalls).toHaveLength(0)
   })
 
-  it('sends a PUT /api/studies/:id request on Save when the form is valid', async () => {
+  it('sends a PUT /api/v1/studies/:id request on Save when the form is valid', async () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
       const method = init?.method ?? 'GET'
-      if (url === '/api/studies' && method === 'GET') {
+      if (url === '/api/v1/studies' && method === 'GET') {
         return jsonResponse({ data: [SEED_STUDY] })
       }
-      if (url === '/api/eligibility-dimensions') {
+      if (url === '/api/v1/eligibility-dimensions') {
         return jsonResponse({ data: DIMENSIONS })
       }
-      if (url === `/api/studies/${SEED_STUDY.id}` && method === 'GET') {
+      if (url === `/api/v1/studies/${SEED_STUDY.id}` && method === 'GET') {
         return jsonResponse({ data: SEED_STUDY })
       }
-      if (url === `/api/studies/${SEED_STUDY.id}` && method === 'PUT') {
+      if (url === `/api/v1/studies/${SEED_STUDY.id}` && method === 'PUT') {
         const updated = { ...SEED_STUDY, phase: 'Phase 3' }
         return jsonResponse({ data: updated })
       }
@@ -652,7 +652,7 @@ describe('Edit study summary', () => {
     await waitFor(() => {
       const putCall = fetchMock.mock.calls.find(
         ([url, init]) =>
-          String(url) === `/api/studies/${SEED_STUDY.id}` &&
+          String(url) === `/api/v1/studies/${SEED_STUDY.id}` &&
           (init as RequestInit | undefined)?.method === 'PUT',
       )
       expect(putCall).toBeDefined()
@@ -695,13 +695,13 @@ describe('Eligibility assistant', () => {
   function editHandlerWithStudies(studies: Study[]): FetchHandler {
     return (url, init) => {
       const method = init?.method ?? 'GET'
-      if (url === '/api/studies' && method === 'GET') {
+      if (url === '/api/v1/studies' && method === 'GET') {
         return jsonResponse({ data: studies })
       }
-      if (url === '/api/eligibility-dimensions') {
+      if (url === '/api/v1/eligibility-dimensions') {
         return jsonResponse({ data: DIMENSIONS })
       }
-      const idMatch = url.match(/^\/api\/studies\/([^/]+)$/)
+      const idMatch = url.match(/^\/api\/v1\/studies\/([^/]+)$/)
       if (idMatch && method === 'GET') {
         const found = studies.find((s) => s.id === idMatch[1])
         if (found) {
@@ -724,7 +724,7 @@ describe('Eligibility assistant', () => {
 
     await waitFor(() => {
       const secondFetched = fetchMock.mock.calls.some(
-        ([url]) => String(url) === '/api/studies',
+        ([url]) => String(url) === '/api/v1/studies',
       )
       expect(secondFetched).toBe(true)
     })
@@ -751,7 +751,7 @@ describe('Eligibility assistant', () => {
 
     const eligibilityPuts = fetchMock.mock.calls.filter(
       ([url, init]) =>
-        /\/api\/studies\/study-0001\/eligibility/.test(String(url)) &&
+        /\/api\/v1\/studies\/study-0001\/eligibility/.test(String(url)) &&
         (init as RequestInit | undefined)?.method === 'PUT',
     )
     expect(eligibilityPuts).toHaveLength(0)
@@ -767,7 +767,7 @@ describe('Eligibility assistant', () => {
     await waitFor(() => {
       const listCalls = fetchMock.mock.calls.filter(
         ([url, init]) =>
-          String(url) === '/api/studies' && (init?.method ?? 'GET') === 'GET',
+          String(url) === '/api/v1/studies' && (init?.method ?? 'GET') === 'GET',
       )
       expect(listCalls.length).toBeGreaterThanOrEqual(2)
     })

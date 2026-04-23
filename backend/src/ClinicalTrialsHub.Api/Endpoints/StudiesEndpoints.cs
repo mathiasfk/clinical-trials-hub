@@ -9,7 +9,7 @@ public static class StudiesEndpoints
 {
     public static void MapStudiesEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/studies").WithTags("studies");
+        var group = app.MapGroup("/api/v1/studies").WithTags("studies");
 
         group.MapGet(
                 "/",
@@ -31,7 +31,7 @@ public static class StudiesEndpoints
                 {
                     var created = await studyService.CreateStudyAsync(input, cancellationToken).ConfigureAwait(false);
                     var body = new StudyResponseDto(StudyMapper.ToStudyDto(created));
-                    return Results.Created($"/api/studies/{created.Id}", body);
+                    return Results.Created($"/api/v1/studies/{created.Id}", body);
                 })
             .AddEndpointFilter(JsonInvalidPayloadEndpointFilter.Instance)
             .WithName("CreateStudy")

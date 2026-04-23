@@ -42,7 +42,7 @@ The system SHALL progress every conversation turn through interactive menu optio
 
 #### Scenario: User submits a reference study id for copy-from-study
 - **WHEN** the assistant is awaiting a reference study id and the user types in the footer field and presses Enter
-- **THEN** the system SHALL normalize the input (trim whitespace, strip common punctuation, extract a `study-` + numeric id), resolve the study from the loaded workspace list or via `GET /api/studies/:id`, and SHALL proceed to the criterion menu or SHALL post an error bot turn that keeps reference-id entry available
+- **THEN** the system SHALL normalize the input (trim whitespace, strip common punctuation, extract a `study-` + numeric id), resolve the study from the loaded workspace list or via `GET /api/v1/studies/:id`, and SHALL proceed to the criterion menu or SHALL post an error bot turn that keeps reference-id entry available
 
 #### Scenario: User returns to the root from a nested menu
 - **WHEN** the user is inside any nested skill flow and activates the `Back to main menu` option
@@ -60,7 +60,7 @@ The system SHALL render bot turns aligned to the left side of the drawer thread 
 - **THEN** the drawer SHALL scroll so that the newly appended turn is visible
 
 ### Requirement: Assistant can copy eligibility criteria from a study identified by id
-The system SHALL provide a `Copy criteria from another study` skill on the `Eligibility criteria` screen. When selected, the bot SHALL prompt the user for the reference study's id and SHALL enable the drawer footer field for that purpose. The user SHALL NOT be required to pick from a scrolling list of all other studies. After a study is resolved (from the already-loaded workspace list or via `GET /api/studies/:id`), the bot SHALL render that study's inclusion and exclusion criteria as menu options showing each criterion's description. Activating a criterion option SHALL append that criterion to the matching group (inclusion stays inclusion, exclusion stays exclusion) of the current study's draft and SHALL post a bot confirmation turn. The menu SHALL remain available so the user can add additional criteria from the same source study, and SHALL offer `Pick another study` and `Back to main menu` controls.
+The system SHALL provide a `Copy criteria from another study` skill on the `Eligibility criteria` screen. When selected, the bot SHALL prompt the user for the reference study's id and SHALL enable the drawer footer field for that purpose. The user SHALL NOT be required to pick from a scrolling list of all other studies. After a study is resolved (from the already-loaded workspace list or via `GET /api/v1/studies/:id`), the bot SHALL render that study's inclusion and exclusion criteria as menu options showing each criterion's description. Activating a criterion option SHALL append that criterion to the matching group (inclusion stays inclusion, exclusion stays exclusion) of the current study's draft and SHALL post a bot confirmation turn. The menu SHALL remain available so the user can add additional criteria from the same source study, and SHALL offer `Pick another study` and `Back to main menu` controls.
 
 #### Scenario: User copies one inclusion criterion from another study
 - **WHEN** the user selects `Copy criteria from another study`, enters a valid reference study id that resolves to another study, and activates one of that study's inclusion criteria options
@@ -76,7 +76,7 @@ The system SHALL provide a `Copy criteria from another study` skill on the `Elig
 
 ### Requirement: Assistant can suggest criteria from similar studies using a deterministic heuristic
 
-The system SHALL provide a `Suggest criteria based on similar studies` skill on the `Eligibility criteria` screen. When selected, the bot SHALL request up to three concrete criterion suggestions from the backend similarity endpoint (`GET /api/studies/{id}/similar-suggestions?limit=3`) against the current study's persisted id, and SHALL render the returned suggestions as menu options labeled with each criterion's description and its source study identifier. Activating a suggestion SHALL append that criterion to the matching group of the current study's draft and SHALL post a bot confirmation turn followed by a menu offering `Suggest three more` and `Back to main menu`.
+The system SHALL provide a `Suggest criteria based on similar studies` skill on the `Eligibility criteria` screen. When selected, the bot SHALL request up to three concrete criterion suggestions from the backend similarity endpoint (`GET /api/v1/studies/{id}/similar-suggestions?limit=3`) against the current study's persisted id, and SHALL render the returned suggestions as menu options labeled with each criterion's description and its source study identifier. Activating a suggestion SHALL append that criterion to the matching group of the current study's draft and SHALL post a bot confirmation turn followed by a menu offering `Suggest three more` and `Back to main menu`.
 
 While the backend request is in flight the system SHALL render a bot loading turn and SHALL keep the previously-active menu disabled so the user cannot issue a second request in parallel. On network or server error the system SHALL post a bot error turn and offer `Retry` and `Back to main menu` options.
 
@@ -108,7 +108,7 @@ The deterministic similarity heuristic itself (scoring rules, descending-score o
 
 ### Requirement: Assistant mutates only the local eligibility draft, not the backend
 
-The system SHALL append criteria chosen through the assistant to the local form state of the `Eligibility criteria` screen and SHALL NOT call the study eligibility update endpoint, the full-study update endpoint, or the create-study endpoint on behalf of the user. The assistant MAY issue read-only requests such as `GET /api/studies` (workspace list), `GET /api/studies/:id` (resolve a reference study by id for copy-from-study), and `GET /api/studies/:id/similar-suggestions` (retrieve ranked criterion suggestions for the suggest-relevant skill). Persistence SHALL remain gated by the existing `Save` action in edit mode and the existing `Next` and wizard `Publish` actions in new-study mode.
+The system SHALL append criteria chosen through the assistant to the local form state of the `Eligibility criteria` screen and SHALL NOT call the study eligibility update endpoint, the full-study update endpoint, or the create-study endpoint on behalf of the user. The assistant MAY issue read-only requests such as `GET /api/v1/studies` (workspace list), `GET /api/v1/studies/:id` (resolve a reference study by id for copy-from-study), and `GET /api/v1/studies/:id/similar-suggestions` (retrieve ranked criterion suggestions for the suggest-relevant skill). Persistence SHALL remain gated by the existing `Save` action in edit mode and the existing `Next` and wizard `Publish` actions in new-study mode.
 
 #### Scenario: Accepted criterion is visible in the editor but not persisted
 - **WHEN** the user accepts a criterion through the assistant on an existing study's `Eligibility criteria` screen
