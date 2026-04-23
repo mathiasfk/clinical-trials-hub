@@ -17,4 +17,3 @@ export {
 export { createInitialState, reducer } from './state'
 export type { AssistantState, ReducerAction } from './state'
 export { ELIGIBILITY_SKILLS } from './skills'
-export { useOtherStudies } from './useOtherStudies'

@@ -92,9 +92,8 @@ frontend/
     │   ├── state.ts                 Conversation reducer
     │   ├── skills.ts                Root-menu definitions
     │   ├── types.ts                 Actions, context, turns
-    │   ├── similarity.ts            Scoring + ranking + suggestion extraction
+    │   ├── similarity.ts            Criterion equality + draft filters for copy/suggest UI
     │   ├── referenceStudyId.ts      Fuzzy id parser (e.g. "study 2" → study-0002)
-    │   ├── useOtherStudies.ts       Lazy fetch of the catalog
     │   ├── assistant.css
     │   └── index.ts                 Narrow barrel re-export
     │
@@ -197,7 +196,6 @@ flowchart LR
         ACD[AssistantChatDock]
         ST[state reducer]
         SIM[similarity.ts]
-        UOS[useOtherStudies]
     end
 
     APP --> AS
@@ -216,7 +214,6 @@ flowchart LR
     ELI --> ACD
     ACD --> ST
     ACD --> SIM
-    ELI --> UOS
 ```
 
 The dashed "Outlet ctx" edges are typed React Router outlet contexts. Each
@@ -232,8 +229,8 @@ State is deliberately split by lifetime and ownership:
 ```mermaid
 flowchart TB
     subgraph App
-        AS1[studies: Study[]]
-        AS2[dimensions: EligibilityDimension[]]
+        AS1["studies: Study[]"]
+        AS2["dimensions: EligibilityDimension[]"]
         AS3[loadError, isLoadingList, ...]
     end
 
@@ -483,10 +480,11 @@ the dimension selector.
 ## Assistant module
 
 The `assistant/` folder is a self-contained widget that plugs into the
-`EligibilityCriteriaScreen` via props. It is intentionally **not AI**: all
-ranking and suggestion logic is deterministic TypeScript running in the
-browser. See [`assistant-heuristic.md`](./assistant-heuristic.md) for the
-exact scoring rules.
+`EligibilityCriteriaScreen` via props. It is intentionally **not AI**: the
+chat is a deterministic state machine; **similar-study suggestions** are
+ranked on the server (see [`assistant-heuristic.md`](./assistant-heuristic.md)),
+while the browser handles criterion deduplication, copy-from-study menus, and
+local draft filtering in `similarity.ts`.
 
 ### Module internals
 
@@ -501,8 +499,8 @@ flowchart LR
     SIM -->|read-only| CTX[AssistantContext]
     CTX -.from.-> ELI
 
-    ELI --> UOS[useOtherStudies]
-    UOS -->|fetch| API[(GET /api/v1/studies)]
+    ACD -->|getStudyById| API[(Backend)]
+    ACD -->|getSimilarSuggestions| API
 
     ACD -->|onAddCriterion| ELI
 ```
@@ -520,8 +518,8 @@ START_COPY_FROM_STUDY
   → COPY_CRITERION → host adds it to the draft, same picker rerenders
 
 START_SUGGEST_RELEVANT
-  → rank other studies by similarityScore
-  → collect up to 3 novel suggestions
+  → GET similar-suggestions (server-ranked)
+  → filter against local draft, show up to 3 picks
   → ACCEPT_SUGGESTION → host adds, prompt "suggest three more" / back
 
 BACK_TO_MAIN everywhere returns to the root skill menu.
@@ -536,9 +534,9 @@ A few patterns worth noting:
   waiting for a parent re-render. The reducer also builds an *augmented
   local context* after a copy so same-tick follow-up menus already reflect
   the addition.
-- **Lazy fetch**: `useOtherStudies(enabled, currentStudyId)` only fetches the
-  catalog after the FAB is first opened (`hasOpenedAssistant` flips to
-  `true`). Nothing is paid on visits that don't open the assistant.
+- **Copy-from-study**: the host passes `otherStudies: []`; after the user
+  types a study id, `AssistantChatDock` calls `getStudyById` and merges the
+  result into `lookupStudies` for the rest of the session (drawer open).
 - **Reference id parser** (`referenceStudyId.ts`) normalises `"study 2"`,
   `"Study-02"`, `"  study/0012"` etc. to the canonical `study-0002` form.
 
@@ -569,7 +567,7 @@ src/
 │                                       publish, edit, assistant integration
 ├── sections/validation.test.ts         Pure validators (happy + edge cases)
 └── assistant/
-    ├── similarity.test.ts              Scoring, ranking, suggestion collection
+    ├── similarity.test.ts              Criterion equality + draft filters
     ├── state.test.ts                   Reducer transitions end-to-end
     ├── referenceStudyId.test.ts        ID parser (messy input → canonical)
     └── AssistantChatDock.test.tsx      Dock rendering + interaction
@@ -652,9 +650,9 @@ Conversion happens exactly twice, at the boundary of the section component.
 
 ### 5. Deterministic assistant instead of an LLM
 
-The assistant is a closed-menu conversation driven by a scoring heuristic
-(therapeutic area / phase / study type / shared dimensions) and a
-state-machine reducer. Choosing this over an LLM for the POC:
+The assistant is a closed-menu conversation driven by a state-machine reducer;
+similar-study suggestions use a **server-side** heuristic (therapeutic area /
+phase / study type / shared dimensions). Choosing this over an LLM for the POC:
 
 - Keeps the UX honest about what the widget can and cannot do.
 - Removes provider selection, API key handling, prompt engineering and
@@ -688,8 +686,8 @@ an error was produced.
 - Main catalog and dimension catalog fetch on `App` mount (they are needed
   for both the list and for eligibility editing).
 - The edit workspace fetches its study only when the route is mounted.
-- The assistant fetches the "other studies" catalog only after the drawer is
-  opened for the first time (`useOtherStudies(enabled, …)`).
+- The assistant does **not** prefetch the full study catalog; copy-from-study
+  loads a single study by id when the user submits it.
 
 The cost of each fetch is therefore paid when a user actually needs the
 data, not on every cold start of the SPA.

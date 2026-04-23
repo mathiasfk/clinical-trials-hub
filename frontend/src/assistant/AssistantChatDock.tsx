@@ -30,12 +30,6 @@ interface AssistantChatDockProps {
   skills?: SkillDefinition[]
   context: AssistantContext
   onAddCriterion: OnAddCriterionCallback
-  /** Optional error message describing why `context.otherStudies` couldn't be loaded. */
-  loadError?: string | null
-  /** Optional callback invoked when the user activates Retry in an error state. */
-  onReloadOtherStudies?: () => void
-  /** Fires whenever the drawer opens or closes. Used by hosts to lazy-fetch data. */
-  onOpenChange?: (isOpen: boolean) => void
 }
 
 const DRAWER_TITLE_ID = 'assistant-drawer-title'
@@ -44,9 +38,6 @@ export function AssistantChatDock({
   skills = ELIGIBILITY_SKILLS,
   context,
   onAddCriterion,
-  loadError = null,
-  onReloadOtherStudies,
-  onOpenChange,
 }: AssistantChatDockProps) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -57,9 +48,8 @@ export function AssistantChatDock({
         setLookupStudies([])
         setFooterValue('')
       }
-      onOpenChange?.(next)
     },
-    [onOpenChange],
+    [],
   )
   const [state, dispatch] = useReducer(reducer, skills, createInitialState)
   /** Studies fetched by id for copy-from-study; merged into `effectiveContext` for criterion picks. */
@@ -86,16 +76,6 @@ export function AssistantChatDock({
   }, [context, lookupStudies])
 
   effectiveContextRef.current = effectiveContext
-
-  // Push load errors into the reducer so the error path renders inside the
-  // thread rather than as a toast or full-screen crash.
-  useEffect(() => {
-    if (loadError) {
-      dispatch({ type: 'SET_LOAD_ERROR', message: loadError })
-    } else {
-      dispatch({ type: 'CLEAR_LOAD_ERROR' })
-    }
-  }, [loadError])
 
   useEffect(() => {
     if (!isOpen) {
@@ -192,12 +172,8 @@ export function AssistantChatDock({
       // local augmentation so the menu renders correctly this tick.
       runHostSideEffect(option.action, effectiveContext, onAddCriterion)
       dispatch({ type: 'SELECT_OPTION', optionId: option.id, context: effectiveContext })
-
-      if (option.action.type === 'RETRY_LOAD_OTHER_STUDIES' && onReloadOtherStudies) {
-        onReloadOtherStudies()
-      }
     },
-    [effectiveContext, onAddCriterion, onReloadOtherStudies, runSuggestRelevantRequest],
+    [effectiveContext, onAddCriterion, runSuggestRelevantRequest],
   )
 
   const submitReferenceStudyId = useCallback(async () => {
@@ -229,8 +205,8 @@ export function AssistantChatDock({
       return
     }
 
-    const fromList = context.otherStudies.find((s) => s.id === extracted)
-    if (fromList) {
+    const fromMerged = effectiveContext.otherStudies.find((s) => s.id === extracted)
+    if (fromMerged) {
       setFooterValue('')
       dispatch({
         type: 'REFERENCE_STUDY_RESOLVED',

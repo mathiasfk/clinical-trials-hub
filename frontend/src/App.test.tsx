@@ -712,7 +712,7 @@ describe('Eligibility assistant', () => {
     }
   }
 
-  it('opens the FAB on Eligibility criteria and copies a criterion into the editor without a network call', async () => {
+  it('opens the FAB on Eligibility criteria and copies a criterion into the editor without saving', async () => {
     installFetch(editHandlerWithStudies([SEED_STUDY, SECOND_STUDY]))
     window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/eligibility`)
     render(<App />)
@@ -722,13 +722,6 @@ describe('Eligibility assistant', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Open StudyHub assistant/i }))
 
-    await waitFor(() => {
-      const secondFetched = fetchMock.mock.calls.some(
-        ([url]) => String(url) === '/api/v1/studies',
-      )
-      expect(secondFetched).toBe(true)
-    })
-
     fireEvent.click(
       screen.getByRole('button', { name: /Copy criteria from another study/i }),
     )
@@ -736,6 +729,13 @@ describe('Eligibility assistant', () => {
     const idField = await screen.findByRole('textbox', { name: /Reference study id/i })
     fireEvent.change(idField, { target: { value: 'study-0002' } })
     fireEvent.keyDown(idField, { key: 'Enter', code: 'Enter' })
+
+    await waitFor(() => {
+      const byIdCalls = fetchMock.mock.calls.filter(
+        ([url]) => String(url) === '/api/v1/studies/study-0002',
+      )
+      expect(byIdCalls.length).toBeGreaterThanOrEqual(1)
+    })
 
     const crit = await screen.findByRole('button', {
       name: /Inclusion: hsCRP above 5 mg\/L/i,
@@ -764,13 +764,6 @@ describe('Eligibility assistant', () => {
 
     await screen.findByRole('heading', { name: /study-0001 > Eligibility criteria/i, level: 1 })
     fireEvent.click(screen.getByRole('button', { name: /Open StudyHub assistant/i }))
-    await waitFor(() => {
-      const listCalls = fetchMock.mock.calls.filter(
-        ([url, init]) =>
-          String(url) === '/api/v1/studies' && (init?.method ?? 'GET') === 'GET',
-      )
-      expect(listCalls.length).toBeGreaterThanOrEqual(2)
-    })
     await flush()
     fireEvent.click(
       screen.getByRole('button', { name: /Copy criteria from another study/i }),

@@ -16,7 +16,6 @@ export interface AssistantState {
   skills: SkillDefinition[]
   thread: AssistantTurn[]
   prompt: AssistantPrompt
-  loadError: string | null
   /** When true, the dock enables the footer text field for reference study id entry. */
   awaitingReferenceStudyId: boolean
 }
@@ -24,8 +23,6 @@ export interface AssistantState {
 export type ReducerAction =
   | { type: 'SELECT_OPTION'; optionId: string; context: AssistantContext }
   | { type: 'CLEAR_CHAT'; skills: SkillDefinition[] }
-  | { type: 'SET_LOAD_ERROR'; message: string }
-  | { type: 'CLEAR_LOAD_ERROR' }
   | {
       type: 'REFERENCE_STUDY_RESOLVED'
       context: AssistantContext
@@ -84,7 +81,6 @@ export function createInitialState(skills: SkillDefinition[] = ELIGIBILITY_SKILL
       },
     ],
     prompt,
-    loadError: null,
     awaitingReferenceStudyId: false,
   }
 }
@@ -203,21 +199,6 @@ function resolveAction(
     case 'ACCEPT_SUGGESTION':
       return acknowledgeSuggestion(state, threadWithUser, action)
 
-    case 'RETRY_LOAD_OTHER_STUDIES': {
-      const { thread, prompt } = appendBotTurns(
-        threadWithUser,
-        [
-          {
-            kind: 'bot-text',
-            id: nextId('turn'),
-            text: 'Reloading the list of registered studies…',
-          },
-        ],
-        [BACK_TO_MAIN_OPTION()],
-      )
-      return { ...state, thread, prompt, awaitingReferenceStudyId: false }
-    }
-
     default:
       return state
   }
@@ -250,17 +231,6 @@ function startCopyFromStudy(
   _context: AssistantContext,
   threadWithUser: AssistantTurn[],
 ): AssistantState {
-  if (state.loadError) {
-    return showReferenceStudyIdPrompt(state, threadWithUser, {
-      preamble: [
-        `I couldn't load the list of other studies: ${state.loadError}`,
-        'You can still enter another study’s id in the box below and press Enter, or use Retry.',
-      ],
-      leadingMenuOptions: [
-        { id: 'retry', label: 'Retry', action: { type: 'RETRY_LOAD_OTHER_STUDIES' } },
-      ],
-    })
-  }
   return showReferenceStudyIdPrompt(state, threadWithUser)
 }
 
@@ -442,10 +412,6 @@ export function reducer(state: AssistantState, action: ReducerAction): Assistant
     }
     case 'CLEAR_CHAT':
       return createInitialState(action.skills)
-    case 'SET_LOAD_ERROR':
-      return { ...state, loadError: action.message }
-    case 'CLEAR_LOAD_ERROR':
-      return { ...state, loadError: null }
     case 'SUGGEST_RELEVANT_STARTED': {
       const threadWithDisabled = disableMenusInThread(state.thread)
       const threadWithUser = appendUserTurn(threadWithDisabled, action.userLabel)

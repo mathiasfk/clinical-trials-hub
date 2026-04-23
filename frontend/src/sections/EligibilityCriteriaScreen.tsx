@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 
 import { AssistantChatDock } from '../assistant'
 import type { AssistantContext, CriterionGroup } from '../assistant'
-import { useOtherStudies } from '../assistant/useOtherStudies'
 import type { ApiErrorResponse, EligibilityCriterion } from '../types'
 import { nextSection } from './constants'
 import { CriteriaGroupEditor } from './EligibilityEditor'
@@ -60,13 +59,6 @@ function EligibilityForm() {
   const [successMessage, setSuccessMessage] = useState('')
   const [isBusy, setIsBusy] = useState(false)
 
-  // Assistant: lazily fetch the list of other registered studies the first
-  // time the FAB is opened so we don't pay the cost on every visit.
-  const [hasOpenedAssistant, setHasOpenedAssistant] = useState(false)
-  const currentStudyId = ctx.mode === 'edit' ? ctx.studyId : null
-  const { otherStudies, error: assistantLoadError, reload: reloadOtherStudies } =
-    useOtherStudies(hasOpenedAssistant, currentStudyId)
-
   const currentStudyMeta = useMemo(() => {
     if (ctx.mode === 'edit') {
       const study = ctx.study!
@@ -93,16 +85,10 @@ function EligibilityForm() {
         inclusionCriteria: completeDraftsToCriteria(inclusionCriteria, ctx.dimensions),
         exclusionCriteria: completeDraftsToCriteria(exclusionCriteria, ctx.dimensions),
       },
-      otherStudies,
+      otherStudies: [],
       dimensions: ctx.dimensions,
     }),
-    [
-      currentStudyMeta,
-      inclusionCriteria,
-      exclusionCriteria,
-      otherStudies,
-      ctx.dimensions,
-    ],
+    [currentStudyMeta, inclusionCriteria, exclusionCriteria, ctx.dimensions],
   )
 
   const handleAddCriterion = useCallback(
@@ -197,19 +183,7 @@ function EligibilityForm() {
         />
       </form>
 
-      <AssistantChatDock
-        context={assistantContext}
-        onAddCriterion={handleAddCriterion}
-        loadError={assistantLoadError}
-        onReloadOtherStudies={() => {
-          void reloadOtherStudies()
-        }}
-        onOpenChange={(isOpen) => {
-          if (isOpen) {
-            setHasOpenedAssistant(true)
-          }
-        }}
-      />
+      <AssistantChatDock context={assistantContext} onAddCriterion={handleAddCriterion} />
     </>
   )
 }

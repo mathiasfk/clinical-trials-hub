@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getSimilarSuggestions } from '../api'
+import { getSimilarSuggestions, getStudyById } from '../api'
 import type { EligibilityCriterion, Study } from '../types'
 import { AssistantChatDock } from './AssistantChatDock'
 import type { AssistantContext } from './types'
@@ -11,6 +11,7 @@ vi.mock('../api', async (importOriginal) => {
   return {
     ...actual,
     getSimilarSuggestions: vi.fn(),
+    getStudyById: vi.fn(),
   }
 })
 
@@ -79,24 +80,23 @@ describe('AssistantChatDock — copy-from-study flow', () => {
   const hsCrp = criterion('hsCRP above 2 mg/L', 'hsCRP', { value: 2, unit: 'mg/L' })
   const ageExcl = criterion('Age above 75', 'age', { value: 75, unit: 'years' })
 
-  function makeContext(): AssistantContext {
-    return baseContext({
-      otherStudies: [
-        study({
-          id: 'study-0003',
-          therapeuticArea: 'Cardiovascular',
-          phase: 'Phase 2',
-          inclusionCriteria: [hsCrp],
-          exclusionCriteria: [ageExcl],
-        }),
-      ],
-    })
-  }
+  const referenceStudy = study({
+    id: 'study-0003',
+    therapeuticArea: 'Cardiovascular',
+    phase: 'Phase 2',
+    inclusionCriteria: [hsCrp],
+    exclusionCriteria: [ageExcl],
+  })
 
-  it('renders intro turns, root menu, and drives copy-from-study to an add', () => {
+  beforeEach(() => {
+    vi.mocked(getStudyById).mockReset()
+    vi.mocked(getStudyById).mockResolvedValue(referenceStudy)
+  })
+
+  it('renders intro turns, root menu, and drives copy-from-study to an add', async () => {
     const onAddCriterion = vi.fn()
     render(
-      <AssistantChatDock context={makeContext()} onAddCriterion={onAddCriterion} />,
+      <AssistantChatDock context={baseContext()} onAddCriterion={onAddCriterion} />,
     )
 
     openAssistant()
@@ -119,8 +119,12 @@ describe('AssistantChatDock — copy-from-study flow', () => {
     fireEvent.change(idField, { target: { value: 'study-0003' } })
     fireEvent.keyDown(idField, { key: 'Enter', code: 'Enter' })
 
+    await waitFor(() => {
+      expect(vi.mocked(getStudyById)).toHaveBeenCalledWith('study-0003')
+    })
+
     fireEvent.click(
-      screen.getByRole('button', { name: /Inclusion: hsCRP above 2 mg\/L/i }),
+      await screen.findByRole('button', { name: /Inclusion: hsCRP above 2 mg\/L/i }),
     )
 
     expect(onAddCriterion).toHaveBeenCalledTimes(1)
@@ -138,7 +142,7 @@ describe('AssistantChatDock — copy-from-study flow', () => {
   it('Clear chat resets to the intro and keeps the dock open', () => {
     const onAddCriterion = vi.fn()
     render(
-      <AssistantChatDock context={makeContext()} onAddCriterion={onAddCriterion} />,
+      <AssistantChatDock context={baseContext()} onAddCriterion={onAddCriterion} />,
     )
 
     openAssistant()

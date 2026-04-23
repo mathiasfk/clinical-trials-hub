@@ -20,7 +20,11 @@ export interface AssistantContext {
     inclusionCriteria: EligibilityCriterion[]
     exclusionCriteria: EligibilityCriterion[]
   }
-  /** All other registered studies (the current study is already filtered out). */
+  /**
+   * Reference studies available for copy-from-study. The host normally passes
+   * an empty array; `AssistantChatDock` merges studies loaded by id into its
+   * effective context for menus and duplicate filtering.
+   */
   otherStudies: Study[]
   /** Dimensions shared by the section context for label rendering. */
   dimensions: EligibilityDimension[]
@@ -91,7 +95,6 @@ export type AssistantAction =
   | { type: 'SUGGEST_THREE_MORE' }
   /** Common / error navigation */
   | { type: 'BACK_TO_MAIN' }
-  | { type: 'RETRY_LOAD_OTHER_STUDIES' }
   | { type: 'RETRY_SUGGEST_RELEVANT' }
   /** No-op used for older, superseded menus (rendered disabled). */
   | { type: 'NOOP' }

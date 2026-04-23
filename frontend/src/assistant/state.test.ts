@@ -334,18 +334,6 @@ describe('reducer misc', () => {
     })
     expect(next).toBe(state)
   })
-
-  it('renders a Retry + Back when loadError is set', () => {
-    let state = createInitialState(ELIGIBILITY_SKILLS)
-    state = reducer(state, { type: 'SET_LOAD_ERROR', message: 'boom' })
-    state = reducer(state, {
-      type: 'SELECT_OPTION',
-      optionId: 'copy-from-study',
-      context: makeContext(),
-    })
-    const menu = lastMenuOptions(state.thread)
-    expect(menu.map((option) => option.id)).toEqual(['retry', 'back-to-main'])
-  })
 })
 
 // Ensure the vi import is used (vitest's auto-mock lint is strict).
