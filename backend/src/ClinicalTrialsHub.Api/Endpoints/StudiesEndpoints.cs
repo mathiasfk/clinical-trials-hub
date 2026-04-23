@@ -103,5 +103,42 @@ public static class StudiesEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .WithOpenApi();
+
+        group.MapGet(
+                "/{id}/similar-suggestions",
+                async (
+                    string id,
+                    int? limit,
+                    SimilaritySuggestionService similarityService,
+                    CancellationToken cancellationToken) =>
+                {
+                    if (string.IsNullOrWhiteSpace(id))
+                    {
+                        return Results.BadRequest(new ErrorResponseDto("study id is required", null));
+                    }
+
+                    var resolvedLimit = limit ?? 3;
+                    if (resolvedLimit is < 1 or > 10)
+                    {
+                        var errors = new Dictionary<string, string>
+                        {
+                            ["limit"] = "limit must be between 1 and 10",
+                        };
+                        return Results.BadRequest(new ErrorResponseDto("validation failed", errors));
+                    }
+
+                    var result = await similarityService
+                        .GetSimilarSuggestionsAsync(id, resolvedLimit, cancellationToken)
+                        .ConfigureAwait(false);
+                    return Results.Ok(result);
+                })
+            .WithName("GetSimilarStudySuggestions")
+            .WithSummary("Similar study criterion suggestions")
+            .WithDescription(
+                "Returns up to `limit` eligibility criteria from other studies ranked by deterministic similarity to the target study.")
+            .Produces<SimilarSuggestionsResponseDto>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .WithOpenApi();
     }
 }

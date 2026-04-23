@@ -203,42 +203,51 @@ describe('copy-from-study flow', () => {
   })
 })
 
-describe('suggest-relevant-criteria flow', () => {
-  it('offers up to three suggestions, accepts one, and regenerates on demand', () => {
+describe('suggest-relevant-criteria flow (server-shaped reducer)', () => {
+  it('renders suggestions after RESOLVED and follow-up after accepting', () => {
     const suggestedA = criterion('A-in1', 'x')
     const suggestedB = criterion('A-ex1', 'y')
     const suggestedC = criterion('B-in1', 'x')
-    const unused = criterion('B-in2', 'z')
-    const context = makeContext({
-      otherStudies: [
-        study({
-          id: 'study-a',
-          therapeuticArea: 'Cardiovascular',
-          phase: 'Phase 2',
-          inclusionCriteria: [suggestedA],
-          exclusionCriteria: [suggestedB],
-        }),
-        study({
-          id: 'study-0004',
-          therapeuticArea: 'Oncology',
-          phase: 'Phase 3',
-          inclusionCriteria: [suggestedC, unused],
-        }),
-      ],
-    })
-    let state = createInitialState(ELIGIBILITY_SKILLS)
+    const context = makeContext()
 
+    let state = createInitialState(ELIGIBILITY_SKILLS)
     state = reducer(state, {
-      type: 'SELECT_OPTION',
-      optionId: 'suggest-relevant-criteria',
-      context,
+      type: 'SUGGEST_RELEVANT_STARTED',
+      userLabel: 'Suggest criteria based on similar studies',
+      mode: 'initial',
     })
+    state = reducer(state, {
+      type: 'SUGGEST_RELEVANT_RESOLVED',
+      suggestions: [
+        {
+          sourceStudyId: 'study-a',
+          group: 'inclusion',
+          criterionIndex: 0,
+          criterion: suggestedA,
+        },
+        {
+          sourceStudyId: 'study-a',
+          group: 'exclusion',
+          criterionIndex: 0,
+          criterion: suggestedB,
+        },
+        {
+          sourceStudyId: 'study-0004',
+          group: 'inclusion',
+          criterionIndex: 0,
+          criterion: suggestedC,
+        },
+      ],
+      mode: 'initial',
+    })
+
     let menu = lastMenuOptions(state.thread)
     const suggestOptions = menu.filter((option) => option.id.startsWith('suggest:'))
     expect(suggestOptions).toHaveLength(3)
-    expect(suggestOptions[0].id).toBe('suggest:study-a:inclusion:0')
-    expect(suggestOptions[1].id).toBe('suggest:study-a:exclusion:0')
-    expect(suggestOptions[2].id).toBe('suggest:study-0004:inclusion:0')
+    expect(suggestOptions[0].action).toMatchObject({
+      type: 'ACCEPT_SUGGESTION',
+      criterion: suggestedA,
+    })
 
     state = reducer(state, {
       type: 'SELECT_OPTION',
@@ -246,10 +255,7 @@ describe('suggest-relevant-criteria flow', () => {
       context,
     })
     menu = lastMenuOptions(state.thread)
-    expect(menu.map((option) => option.id)).toEqual([
-      'suggest-three-more',
-      'back-to-main',
-    ])
+    expect(menu.map((option) => option.id)).toEqual(['suggest-three-more', 'back-to-main'])
 
     const contextAfterAdd: AssistantContext = {
       ...context,
@@ -259,33 +265,38 @@ describe('suggest-relevant-criteria flow', () => {
       },
     }
     state = reducer(state, {
-      type: 'SELECT_OPTION',
-      optionId: 'suggest-three-more',
-      context: contextAfterAdd,
+      type: 'SUGGEST_RELEVANT_STARTED',
+      userLabel: 'Suggest three more',
+      mode: 'more',
+    })
+    state = reducer(state, {
+      type: 'SUGGEST_RELEVANT_RESOLVED',
+      suggestions: [
+        {
+          sourceStudyId: 'study-0004',
+          group: 'inclusion',
+          criterionIndex: 1,
+          criterion: criterion('B-in2', 'z'),
+        },
+      ],
+      mode: 'more',
     })
     menu = lastMenuOptions(state.thread)
     const regenerated = menu.filter((option) => option.id.startsWith('suggest:'))
-    expect(regenerated.map((option) => option.id)).not.toContain(
-      'suggest:study-a:inclusion:0',
-    )
+    expect(regenerated).toHaveLength(1)
   })
 
-  it('emits a no-suggestions bot turn when every candidate is already present', () => {
-    const dup = criterion('A-in1', 'x')
-    const context = makeContext({
-      currentStudy: {
-        ...makeContext().currentStudy,
-        inclusionCriteria: [dup],
-      },
-      otherStudies: [
-        study({ id: 'study-a', inclusionCriteria: [dup] }),
-      ],
-    })
+  it('emits a no-suggestions bot turn when RESOLVED returns an empty list', () => {
     let state = createInitialState(ELIGIBILITY_SKILLS)
     state = reducer(state, {
-      type: 'SELECT_OPTION',
-      optionId: 'suggest-relevant-criteria',
-      context,
+      type: 'SUGGEST_RELEVANT_STARTED',
+      userLabel: 'Suggest criteria based on similar studies',
+      mode: 'initial',
+    })
+    state = reducer(state, {
+      type: 'SUGGEST_RELEVANT_RESOLVED',
+      suggestions: [],
+      mode: 'initial',
     })
     const menu = lastMenuOptions(state.thread)
     expect(menu).toHaveLength(1)

@@ -50,7 +50,7 @@ public static class StudySeeder
     {
         var id = $"study-{index:D4}";
         var therapeuticArea = TherapeuticAreasInSeedOrder[index - 1];
-        var criterion = new EligibilityCriterion
+        var ageCriterion = new EligibilityCriterion
         {
             Description = "Participants must meet registrable age criteria.",
             DeterministicRule = new DeterministicRule
@@ -62,12 +62,26 @@ public static class StudySeeder
             },
         };
 
+        // Shared across seeds for the age row, but each study also carries a distinct supplemental rule
+        // so GET /similar-suggestions is not empty for every study (duplicate rules are skipped vs. target).
+        var supplementalInclusion = new EligibilityCriterion
+        {
+            Description = $"{id}: supplemental BMI ceiling for {therapeuticArea} cohort (seed).",
+            DeterministicRule = new DeterministicRule
+            {
+                DimensionId = "BMI",
+                Operator = "<",
+                Value = 28 + (index % 7),
+                Unit = "kg/m²",
+            },
+        };
+
         return new Study
         {
             Id = id,
             Objectives = new List<string> { $"{id}: primary objective (seed)." },
             Endpoints = new List<string> { $"{id}: primary endpoint (seed)." },
-            InclusionCriteria = new List<EligibilityCriterion> { criterion },
+            InclusionCriteria = new List<EligibilityCriterion> { ageCriterion, supplementalInclusion },
             ExclusionCriteria = new List<EligibilityCriterion>(),
             Participants = 120,
             StudyType = "parallel",

@@ -81,10 +81,17 @@ export type AssistantAction =
     }
   | { type: 'PICK_ANOTHER_STUDY' }
   /** Suggest-relevant navigation */
-  | { type: 'ACCEPT_SUGGESTION'; studyId: string; group: CriterionGroup; criterionIndex: number }
+  | {
+      type: 'ACCEPT_SUGGESTION'
+      studyId: string
+      group: CriterionGroup
+      criterionIndex: number
+      criterion: EligibilityCriterion
+    }
   | { type: 'SUGGEST_THREE_MORE' }
   /** Common / error navigation */
   | { type: 'BACK_TO_MAIN' }
   | { type: 'RETRY_LOAD_OTHER_STUDIES' }
+  | { type: 'RETRY_SUGGEST_RELEVANT' }
   /** No-op used for older, superseded menus (rendered disabled). */
   | { type: 'NOOP' }

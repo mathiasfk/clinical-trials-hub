@@ -61,3 +61,11 @@ export interface ApiErrorResponse {
   message: string
   errors?: Record<string, string>
 }
+
+/** One criterion suggestion from `GET /api/studies/{id}/similar-suggestions`. */
+export interface SuggestedCriterion {
+  sourceStudyId: string
+  group: 'inclusion' | 'exclusion'
+  criterionIndex: number
+  criterion: EligibilityCriterion
+}

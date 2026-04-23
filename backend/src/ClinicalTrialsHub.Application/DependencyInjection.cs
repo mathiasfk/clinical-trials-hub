@@ -11,6 +11,7 @@ public static class DependencyInjection
     {
         services.AddValidatorsFromAssemblyContaining<StudyCreateInputValidator>();
         services.AddScoped<StudyService>();
+        services.AddScoped<SimilaritySuggestionService>();
         return services;
     }
 }

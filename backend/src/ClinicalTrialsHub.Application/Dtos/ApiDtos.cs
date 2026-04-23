@@ -54,3 +54,11 @@ public sealed record DimensionsResponseDto(IReadOnlyList<EligibilityDimensionDto
 public sealed record HealthResponseDto(string Status);
 
 public sealed record ErrorResponseDto(string Message, IReadOnlyDictionary<string, string>? Errors);
+
+public sealed record SuggestedCriterionDto(
+    string SourceStudyId,
+    string Group,
+    int CriterionIndex,
+    EligibilityCriterionDto Criterion);
+
+public sealed record SimilarSuggestionsResponseDto(IReadOnlyList<SuggestedCriterionDto> Data);

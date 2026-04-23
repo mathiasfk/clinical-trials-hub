@@ -123,7 +123,7 @@ public static class StudyMapper
         return unit;
     }
 
-    private static EligibilityCriterionDto ToDtoCriterion(EligibilityCriterion criterion)
+    public static EligibilityCriterionDto ToDtoCriterion(EligibilityCriterion criterion)
     {
         var r = criterion.DeterministicRule;
         var dtoRule = new DeterministicRuleDto(r.DimensionId, r.Operator, r.Value, r.Unit);

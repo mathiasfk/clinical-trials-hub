@@ -10,10 +10,9 @@ export type {
   SkillDefinition,
 } from './types'
 export {
-  collectSuggestions,
+  filterCopyableCriteria,
+  filterSuggestionsAgainstLocalDraft,
   isSameCriterion,
-  rankStudies,
-  similarityScore,
 } from './similarity'
 export { createInitialState, reducer } from './state'
 export type { AssistantState, ReducerAction } from './state'

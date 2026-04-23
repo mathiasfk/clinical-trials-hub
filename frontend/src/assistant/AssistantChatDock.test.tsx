@@ -1,9 +1,18 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getSimilarSuggestions } from '../api'
 import type { EligibilityCriterion, Study } from '../types'
 import { AssistantChatDock } from './AssistantChatDock'
 import type { AssistantContext } from './types'
+
+vi.mock('../api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api')>()
+  return {
+    ...actual,
+    getSimilarSuggestions: vi.fn(),
+  }
+})
 
 afterEach(() => {
   cleanup()
@@ -150,27 +159,54 @@ describe('AssistantChatDock — copy-from-study flow', () => {
 })
 
 describe('AssistantChatDock — suggestion flow', () => {
-  it('offers three suggestions, accepts one, and regenerates on Suggest three more', () => {
+  beforeEach(() => {
+    vi.mocked(getSimilarSuggestions).mockReset()
+  })
+
+  it('shows loading, renders server suggestions, accepts one, and re-fetches on Suggest three more', async () => {
     const suggestedA = criterion('A-in1', 'x')
     const suggestedB = criterion('A-ex1', 'y')
     const suggestedC = criterion('B-in1', 'x')
-    const unused = criterion('B-in2', 'z')
+
+    const firstBatch = [
+      {
+        sourceStudyId: 'study-a',
+        group: 'inclusion' as const,
+        criterionIndex: 0,
+        criterion: suggestedA,
+      },
+      {
+        sourceStudyId: 'study-a',
+        group: 'exclusion' as const,
+        criterionIndex: 0,
+        criterion: suggestedB,
+      },
+      {
+        sourceStudyId: 'study-0004',
+        group: 'inclusion' as const,
+        criterionIndex: 0,
+        criterion: suggestedC,
+      },
+    ]
+
+    const secondBatch = [
+      {
+        sourceStudyId: 'study-0004',
+        group: 'inclusion' as const,
+        criterionIndex: 1,
+        criterion: criterion('B-in2', 'z'),
+      },
+    ]
+
+    const mockGet = vi.mocked(getSimilarSuggestions)
+    mockGet.mockResolvedValueOnce(firstBatch).mockResolvedValueOnce(secondBatch)
 
     const context: AssistantContext = baseContext({
-      otherStudies: [
-        study({
-          id: 'study-a',
-          therapeuticArea: 'Cardiovascular',
-          phase: 'Phase 2',
-          inclusionCriteria: [suggestedA],
-          exclusionCriteria: [suggestedB],
-        }),
-        study({
-          id: 'study-0004',
-          therapeuticArea: 'Oncology',
-          inclusionCriteria: [suggestedC, unused],
-        }),
-      ],
+      currentStudy: {
+        ...baseContext().currentStudy,
+        id: 'study-current',
+      },
+      otherStudies: [],
     })
 
     const onAddCriterion = vi.fn()
@@ -183,15 +219,17 @@ describe('AssistantChatDock — suggestion flow', () => {
       screen.getByRole('button', { name: /Suggest criteria based on similar studies/i }),
     )
 
-    const suggestButtons = screen
-      .getAllByRole('button')
-      .filter((btn) => /from study-/i.test(btn.textContent ?? ''))
+    expect(await screen.findByRole('button', { name: /Loading suggestions/i })).toBeDisabled()
+    expect(mockGet).toHaveBeenCalledWith('study-current', { limit: 3 })
+
+    const suggestButtons = await screen.findAllByRole('button', {
+      name: /from study-/i,
+    })
     expect(suggestButtons).toHaveLength(3)
 
     fireEvent.click(suggestButtons[0])
     expect(onAddCriterion).toHaveBeenCalledWith('inclusion', suggestedA)
 
-    // Simulate the parent updating the context with the newly added criterion.
     const updatedContext: AssistantContext = {
       ...context,
       currentStudy: {
@@ -202,11 +240,44 @@ describe('AssistantChatDock — suggestion flow', () => {
     rerender(<AssistantChatDock context={updatedContext} onAddCriterion={onAddCriterion} />)
 
     fireEvent.click(screen.getByRole('button', { name: /Suggest three more/i }))
-    const regenerated = screen
-      .getAllByRole('button')
-      .filter((btn) => /from study-/i.test(btn.textContent ?? ''))
-      .filter((btn) => !btn.hasAttribute('disabled'))
-    const labels = regenerated.map((btn) => btn.textContent ?? '')
-    expect(labels.every((label) => !/A-in1/.test(label))).toBe(true)
+    await waitFor(() => {
+      expect(mockGet).toHaveBeenCalledTimes(2)
+    })
+    await waitFor(() => {
+      const enabled = screen
+        .getAllByRole('button', { name: /from study-/i })
+        .filter((btn) => !(btn as HTMLButtonElement).disabled)
+      expect(enabled).toHaveLength(1)
+    })
+  })
+
+  it('surfaces fetch errors with Retry and re-invokes the request', async () => {
+    const mockGet = vi.mocked(getSimilarSuggestions)
+    mockGet.mockReset()
+    mockGet
+      .mockRejectedValueOnce({ message: 'network down' })
+      .mockResolvedValueOnce([
+      {
+        sourceStudyId: 'study-x',
+        group: 'inclusion' as const,
+        criterionIndex: 0,
+        criterion: criterion('Recovered', 'age', { value: 18 }),
+      },
+    ])
+
+    const context = baseContext({
+      currentStudy: { ...baseContext().currentStudy, id: 'study-current' },
+    })
+    render(<AssistantChatDock context={context} onAddCriterion={vi.fn()} />)
+
+    openAssistant()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Suggest criteria based on similar studies/i }),
+    )
+
+    expect(await screen.findByText(/network down/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /^Retry$/i }))
+    expect(await screen.findByRole('button', { name: /from study-/i })).toBeInTheDocument()
+    expect(mockGet).toHaveBeenCalledTimes(2)
   })
 })

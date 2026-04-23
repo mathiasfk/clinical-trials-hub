@@ -267,6 +267,70 @@
         }
       }
     },
+    "/api/studies/{id}/similar-suggestions": {
+      "get": {
+        "tags": [
+          "studies"
+        ],
+        "summary": "Similar study criterion suggestions",
+        "description": "Returns up to `limit` eligibility criteria from other studies ranked by deterministic similarity to the target study.",
+        "operationId": "GetSimilarStudySuggestions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilarSuggestionsResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health check",
@@ -365,6 +429,21 @@
               "null",
               "string"
             ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "SimilarSuggestionsResponseDto": {
+        "required": [
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SuggestedCriterionDto"
+            }
           }
         },
         "additionalProperties": false
@@ -582,6 +661,35 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/StudyDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SuggestedCriterionDto": {
+        "required": [
+          "sourceStudyId",
+          "group",
+          "criterionIndex",
+          "criterion"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceStudyId": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "criterionIndex": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "criterion": {
+            "$ref": "#/components/schemas/EligibilityCriterionDto"
           }
         },
         "additionalProperties": false

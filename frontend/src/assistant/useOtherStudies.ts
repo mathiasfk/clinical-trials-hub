@@ -16,6 +16,11 @@ export interface UseOtherStudiesResult {
  * `enabled` flips to `true` so the cost isn't paid on every visit to the
  * section.
  *
+ * The assistant's **Suggest criteria based on similar studies** skill does not
+ * depend on this list; it calls `GET /api/studies/{id}/similar-suggestions`
+ * instead. This hook remains useful to pre-populate `otherStudies` for
+ * **Copy criteria from another study** (study picker and duplicate filtering).
+ *
  * @param enabled When false the hook performs no network work.
  * @param currentStudyId When not null, the matching study is filtered out.
  */

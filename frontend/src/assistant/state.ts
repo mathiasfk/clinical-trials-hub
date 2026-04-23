@@ -1,10 +1,5 @@
-import type { EligibilityCriterion } from '../types'
-import {
-  collectSuggestions,
-  filterCopyableCriteria,
-  rankStudies,
-} from './similarity'
-import type { SuggestedCriterion } from './similarity'
+import type { EligibilityCriterion, SuggestedCriterion } from '../types'
+import { filterCopyableCriteria } from './similarity'
 import { ELIGIBILITY_SKILLS } from './skills'
 import type {
   AssistantAction,
@@ -36,6 +31,13 @@ export type ReducerAction =
       userLabel: string
     }
   | { type: 'REFERENCE_STUDY_LOOKUP_FAILED'; userLabel: string; message: string }
+  | { type: 'SUGGEST_RELEVANT_STARTED'; userLabel: string; mode: 'initial' | 'more' }
+  | {
+      type: 'SUGGEST_RELEVANT_RESOLVED'
+      suggestions: SuggestedCriterion[]
+      mode: 'initial' | 'more'
+    }
+  | { type: 'SUGGEST_RELEVANT_FAILED'; message: string; appendUserLabel?: string }
 
 let sequentialId = 0
 function nextId(prefix: string): string {
@@ -141,6 +143,24 @@ function findOption(prompt: AssistantPrompt, optionId: string): MenuOption | und
   return prompt.options.find((option) => option.id === optionId)
 }
 
+const SUGGEST_LOADING_TEXT = 'Fetching suggestions from similar studies…'
+
+function removeTrailingSuggestLoading(thread: AssistantTurn[]): AssistantTurn[] {
+  const last = thread[thread.length - 1]
+  const prev = thread[thread.length - 2]
+  if (
+    last?.kind === 'bot-menu' &&
+    last.options.length === 1 &&
+    last.options[0]?.id === 'suggest-loading' &&
+    prev?.kind === 'bot-text' &&
+    prev.text === SUGGEST_LOADING_TEXT
+  ) {
+    return thread.slice(0, -2)
+  }
+
+  return thread
+}
+
 function resolveAction(
   state: AssistantState,
   context: AssistantContext,
@@ -168,9 +188,6 @@ function resolveAction(
     case 'START_COPY_FROM_STUDY':
       return startCopyFromStudy(state, context, threadWithUser)
 
-    case 'START_SUGGEST_RELEVANT':
-      return startSuggestRelevant(state, context, threadWithUser)
-
     case 'PICK_STUDY':
       return showCriteriaOfStudy(state, context, threadWithUser, action.studyId)
 
@@ -182,11 +199,6 @@ function resolveAction(
 
     case 'ACCEPT_SUGGESTION':
       return acknowledgeSuggestion(state, context, threadWithUser, action)
-
-    case 'SUGGEST_THREE_MORE':
-      return startSuggestRelevant(state, context, threadWithUser, {
-        headerText: 'Here are three more suggestions:',
-      })
 
     case 'RETRY_LOAD_OTHER_STUDIES': {
       const { thread, prompt } = appendBotTurns(
@@ -374,107 +386,13 @@ function acknowledgeCopy(
   return showCriteriaOfStudy(state, augmentedContext, threadWithAck, action.studyId)
 }
 
-function startSuggestRelevant(
-  state: AssistantState,
-  context: AssistantContext,
-  threadWithUser: AssistantTurn[],
-  opts: { headerText?: string } = {},
-): AssistantState {
-  if (state.loadError) {
-    const { thread, prompt } = appendBotTurns(
-      threadWithUser,
-      [
-        {
-          kind: 'bot-text',
-          id: nextId('turn'),
-          text: `I couldn't load the list of other studies: ${state.loadError}`,
-        },
-      ],
-      [
-        { id: 'retry', label: 'Retry', action: { type: 'RETRY_LOAD_OTHER_STUDIES' } },
-        BACK_TO_MAIN_OPTION(),
-      ],
-    )
-    return { ...state, thread, prompt, awaitingReferenceStudyId: false }
-  }
-
-  if (context.otherStudies.length === 0) {
-    const { thread, prompt } = appendBotTurns(
-      threadWithUser,
-      [
-        {
-          kind: 'bot-text',
-          id: nextId('turn'),
-          text: 'No other studies to compare with yet, so I have no suggestions to offer.',
-        },
-      ],
-      [BACK_TO_MAIN_OPTION()],
-    )
-    return { ...state, thread, prompt, awaitingReferenceStudyId: false }
-  }
-
-  const ranked = rankStudies(context.currentStudy, context.otherStudies)
-  const suggestions = collectSuggestions(context.currentStudy, ranked, 3)
-
-  if (suggestions.length === 0) {
-    const { thread, prompt } = appendBotTurns(
-      threadWithUser,
-      [
-        {
-          kind: 'bot-text',
-          id: nextId('turn'),
-          text: 'No new suggestions — every candidate criterion is already in your draft.',
-        },
-      ],
-      [BACK_TO_MAIN_OPTION()],
-    )
-    return { ...state, thread, prompt, awaitingReferenceStudyId: false }
-  }
-
-  const options: MenuOption[] = suggestions.map((suggestion) => ({
-    id: `suggest:${suggestion.sourceStudyId}:${suggestion.group}:${suggestion.criterionIndex}`,
-    label: suggestionLabel(suggestion),
-    action: {
-      type: 'ACCEPT_SUGGESTION',
-      studyId: suggestion.sourceStudyId,
-      group: suggestion.group,
-      criterionIndex: suggestion.criterionIndex,
-    },
-  }))
-  options.push(BACK_TO_MAIN_OPTION())
-
-  const headerText =
-    opts.headerText ??
-    (suggestions.length === 3
-      ? 'Here are three suggestions I drew from the most similar studies:'
-      : `I could only find ${suggestions.length} new suggestion${
-          suggestions.length === 1 ? '' : 's'
-        }:`)
-
-  const { thread, prompt } = appendBotTurns(
-    threadWithUser,
-    [{ kind: 'bot-text', id: nextId('turn'), text: headerText }],
-    options,
-  )
-  return { ...state, thread, prompt, awaitingReferenceStudyId: false }
-}
-
 function acknowledgeSuggestion(
   state: AssistantState,
   context: AssistantContext,
   threadWithUser: AssistantTurn[],
   action: Extract<AssistantAction, { type: 'ACCEPT_SUGGESTION' }>,
 ): AssistantState {
-  const study = context.otherStudies.find((candidate) => candidate.id === action.studyId)
-  if (!study) {
-    return startSuggestRelevant(state, context, threadWithUser)
-  }
-  const list =
-    action.group === 'inclusion' ? study.inclusionCriteria : study.exclusionCriteria
-  const criterion = list[action.criterionIndex]
-  if (!criterion) {
-    return startSuggestRelevant(state, context, threadWithUser)
-  }
+  const criterion = action.criterion
 
   const ackText = `Added "${criterion.description.trim() || '(unnamed criterion)'}" to your ${
     action.group === 'inclusion' ? 'inclusion' : 'exclusion'
@@ -526,6 +444,107 @@ export function reducer(state: AssistantState, action: ReducerAction): Assistant
       return { ...state, loadError: action.message }
     case 'CLEAR_LOAD_ERROR':
       return { ...state, loadError: null }
+    case 'SUGGEST_RELEVANT_STARTED': {
+      const threadWithDisabled = disableMenusInThread(state.thread)
+      const threadWithUser = appendUserTurn(threadWithDisabled, action.userLabel)
+      const loadingText: AssistantTurn = {
+        kind: 'bot-text',
+        id: nextId('turn'),
+        text: SUGGEST_LOADING_TEXT,
+      }
+      const prompt: AssistantPrompt = {
+        id: nextId('prompt'),
+        options: [
+          {
+            id: 'suggest-loading',
+            label: 'Loading suggestions…',
+            disabled: true,
+            action: { type: 'NOOP' },
+          },
+        ],
+      }
+      const menuTurn: AssistantTurn = {
+        kind: 'bot-menu',
+        id: nextId('turn'),
+        options: prompt.options,
+      }
+      return {
+        ...state,
+        thread: [...threadWithUser, loadingText, menuTurn],
+        prompt,
+        awaitingReferenceStudyId: false,
+      }
+    }
+    case 'SUGGEST_RELEVANT_RESOLVED': {
+      const baseThread = removeTrailingSuggestLoading(disableMenusInThread(state.thread))
+      const { suggestions, mode } = action
+
+      if (suggestions.length === 0) {
+        const { thread, prompt } = appendBotTurns(
+          baseThread,
+          [
+            {
+              kind: 'bot-text',
+              id: nextId('turn'),
+              text: 'No suggestions are available right now — every candidate criterion is already in your draft or the corpus has no new ideas.',
+            },
+          ],
+          [BACK_TO_MAIN_OPTION()],
+        )
+        return { ...state, thread, prompt, awaitingReferenceStudyId: false }
+      }
+
+      const options: MenuOption[] = suggestions.map((suggestion) => ({
+        id: `suggest:${suggestion.sourceStudyId}:${suggestion.group}:${suggestion.criterionIndex}`,
+        label: suggestionLabel(suggestion),
+        action: {
+          type: 'ACCEPT_SUGGESTION',
+          studyId: suggestion.sourceStudyId,
+          group: suggestion.group,
+          criterionIndex: suggestion.criterionIndex,
+          criterion: suggestion.criterion,
+        },
+      }))
+      options.push(BACK_TO_MAIN_OPTION())
+
+      const headerText =
+        mode === 'more'
+          ? 'Here are three more suggestions:'
+          : suggestions.length === 3
+            ? 'Here are three suggestions I drew from the most similar studies:'
+            : `I could only find ${suggestions.length} new suggestion${
+                suggestions.length === 1 ? '' : 's'
+              }:`
+
+      const { thread, prompt } = appendBotTurns(
+        baseThread,
+        [{ kind: 'bot-text', id: nextId('turn'), text: headerText }],
+        options,
+      )
+      return { ...state, thread, prompt, awaitingReferenceStudyId: false }
+    }
+    case 'SUGGEST_RELEVANT_FAILED': {
+      let baseThread = state.thread
+      if (action.appendUserLabel) {
+        baseThread = appendUserTurn(disableMenusInThread(baseThread), action.appendUserLabel)
+      } else {
+        baseThread = removeTrailingSuggestLoading(disableMenusInThread(baseThread))
+      }
+
+      const { thread, prompt } = appendBotTurns(
+        baseThread,
+        [{ kind: 'bot-text', id: nextId('turn'), text: action.message }],
+        [
+          {
+            id: 'retry-suggest',
+            label: 'Retry',
+            action: { type: 'RETRY_SUGGEST_RELEVANT' },
+          },
+          BACK_TO_MAIN_OPTION(),
+        ],
+      )
+      return { ...state, thread, prompt, awaitingReferenceStudyId: false }
+    }
     default:
       return state
   }

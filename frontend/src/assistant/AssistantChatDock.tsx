@@ -9,10 +9,11 @@ import {
 import type { KeyboardEvent } from 'react'
 
 import './assistant.css'
-import { getStudyById } from '../api'
+import { getSimilarSuggestions, getStudyById } from '../api'
 import type { ApiErrorResponse } from '../types'
 import { extractReferenceStudyId } from './referenceStudyId'
 import { ELIGIBILITY_SKILLS } from './skills'
+import { filterSuggestionsAgainstLocalDraft } from './similarity'
 import { createInitialState, reducer } from './state'
 import type {
   AssistantAction,
@@ -65,6 +66,9 @@ export function AssistantChatDock({
   const [lookupStudies, setLookupStudies] = useState<Study[]>([])
   const [footerValue, setFooterValue] = useState('')
   const referenceSubmitBusyRef = useRef(false)
+  const suggestFlowBusyRef = useRef(false)
+  const lastSuggestModeRef = useRef<'initial' | 'more'>('initial')
+  const effectiveContextRef = useRef(context)
   const threadBottomRef = useRef<HTMLDivElement | null>(null)
   const firstMenuButtonRef = useRef<HTMLButtonElement | null>(null)
   const footerInputRef = useRef<HTMLInputElement | null>(null)
@@ -80,6 +84,8 @@ export function AssistantChatDock({
     }
     return { ...context, otherStudies: [...context.otherStudies, ...extra] }
   }, [context, lookupStudies])
+
+  effectiveContextRef.current = effectiveContext
 
   // Push load errors into the reducer so the error path renders inside the
   // thread rather than as a toast or full-screen crash.
@@ -115,8 +121,71 @@ export function AssistantChatDock({
     return () => window.cancelAnimationFrame(frame)
   }, [isOpen, state.prompt.id, state.awaitingReferenceStudyId])
 
+  const runSuggestRelevantRequest = useCallback(
+    async (opts: { userLabel: string; mode: 'initial' | 'more' }) => {
+      const ctx = effectiveContextRef.current
+      const studyId = ctx.currentStudy.id
+      if (!studyId) {
+        dispatch({
+          type: 'SUGGEST_RELEVANT_FAILED',
+          message:
+            'This study does not have an id on the server yet. Finish creating the study (or save your draft) before asking for similar suggestions.',
+          appendUserLabel: opts.userLabel,
+        })
+        return
+      }
+
+      if (suggestFlowBusyRef.current) {
+        return
+      }
+
+      suggestFlowBusyRef.current = true
+      lastSuggestModeRef.current = opts.mode
+      dispatch({
+        type: 'SUGGEST_RELEVANT_STARTED',
+        userLabel: opts.userLabel,
+        mode: opts.mode,
+      })
+
+      try {
+        const raw = await getSimilarSuggestions(studyId, { limit: 3 })
+        const filtered = filterSuggestionsAgainstLocalDraft(ctx.currentStudy, raw)
+        dispatch({
+          type: 'SUGGEST_RELEVANT_RESOLVED',
+          suggestions: filtered,
+          mode: opts.mode,
+        })
+      } catch (caught) {
+        const api = caught as ApiErrorResponse
+        const message =
+          typeof api?.message === 'string' && api.message
+            ? api.message
+            : 'Could not load suggestions. Check your connection and try again.'
+        dispatch({ type: 'SUGGEST_RELEVANT_FAILED', message })
+      } finally {
+        suggestFlowBusyRef.current = false
+      }
+    },
+    [dispatch],
+  )
+
   const handleSelectOption = useCallback(
     (option: MenuOption) => {
+      if (
+        option.action.type === 'START_SUGGEST_RELEVANT' ||
+        option.action.type === 'SUGGEST_THREE_MORE' ||
+        option.action.type === 'RETRY_SUGGEST_RELEVANT'
+      ) {
+        const mode =
+          option.action.type === 'SUGGEST_THREE_MORE'
+            ? 'more'
+            : option.action.type === 'RETRY_SUGGEST_RELEVANT'
+              ? lastSuggestModeRef.current
+              : 'initial'
+        void runSuggestRelevantRequest({ userLabel: option.label, mode })
+        return
+      }
+
       // Side-effect: when the option represents adding a criterion to the
       // host's draft, notify the host BEFORE the reducer runs so the next
       // render of `context` reflects the addition. The reducer also runs its
@@ -128,7 +197,7 @@ export function AssistantChatDock({
         onReloadOtherStudies()
       }
     },
-    [effectiveContext, onAddCriterion, onReloadOtherStudies],
+    [effectiveContext, onAddCriterion, onReloadOtherStudies, runSuggestRelevantRequest],
   )
 
   const submitReferenceStudyId = useCallback(async () => {
@@ -403,7 +472,12 @@ function runHostSideEffect(
   context: AssistantContext,
   onAddCriterion: OnAddCriterionCallback,
 ): void {
-  if (action.type !== 'COPY_CRITERION' && action.type !== 'ACCEPT_SUGGESTION') {
+  if (action.type === 'ACCEPT_SUGGESTION') {
+    onAddCriterion(action.group, action.criterion)
+    return
+  }
+
+  if (action.type !== 'COPY_CRITERION') {
     return
   }
 

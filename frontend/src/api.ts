@@ -4,6 +4,7 @@ import type {
   Study,
   StudyCreateInput,
   StudyEligibilityInput,
+  SuggestedCriterion,
 } from './types'
 
 function apiUrl(path: string): string {
@@ -72,5 +73,17 @@ export async function updateStudyEligibility(id: string, input: StudyEligibility
 export async function listEligibilityDimensions(): Promise<EligibilityDimension[]> {
   const response = await fetch(apiUrl('/api/eligibility-dimensions'))
   const payload = await parseResponse<{ data: EligibilityDimension[] }>(response)
+  return payload.data
+}
+
+export async function getSimilarSuggestions(
+  studyId: string,
+  options?: { limit?: number },
+): Promise<SuggestedCriterion[]> {
+  const limit = options?.limit ?? 3
+  const response = await fetch(
+    apiUrl(`/api/studies/${encodeURIComponent(studyId)}/similar-suggestions?limit=${limit}`),
+  )
+  const payload = await parseResponse<{ data: SuggestedCriterion[] }>(response)
   return payload.data
 }

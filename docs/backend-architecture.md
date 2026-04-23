@@ -36,8 +36,8 @@ flowchart LR
 
 | Project | Responsibility |
 |---------|----------------|
-| **Domain** | `Study`, `StudyDraft`, eligibility types, `EligibilityDimensionRegistry`, `Vocabularies`. No infrastructure attributes on domain types. |
-| **Application** | DTOs, `StudyService`, FluentValidation validators, `IStudyRepository`, mapping, application exceptions. |
+| **Domain** | `Study`, `StudyDraft`, eligibility types, `EligibilityDimensionRegistry`, `StudySimilarityScorer` / `CriterionEquality` (deterministic similarity for suggestions), `Vocabularies`. No infrastructure attributes on domain types. |
+| **Application** | DTOs, `StudyService`, `SimilaritySuggestionService`, FluentValidation validators, `IStudyRepository`, mapping, application exceptions. |
 | **Infrastructure** | `ClinicalTrialsDbContext`, EF configurations, `EfStudyRepository` (sequential `study-NNNN` IDs with a concurrency gate), `StudySeeder`, `SeedStartupHostedService`. |
 | **Api** | `Program.cs` composition root: JSON options (`UnmappedMemberHandling.Disallow`), CORS, health + study + eligibility routes, `GlobalExceptionHandler`, native OpenAPI + Scalar. |
 | **ClinicalTrialsHub.Tests** | Domain, application, infrastructure, and HTTP integration tests (`WebApplicationFactory`). |
@@ -53,6 +53,7 @@ flowchart LR
 | GET/POST | `/api/studies` | List / create. |
 | GET/PUT | `/api/studies/{id}` | Read / full replace. |
 | PUT | `/api/studies/{id}/eligibility` | Inclusion/exclusion only. |
+| GET | `/api/studies/{id}/similar-suggestions` | Read-only ranked criterion suggestions for the assistant (`limit` 1–10, default 3). Heuristic: `StudySimilarityScorer` + walk order in `SimilaritySuggestionService`. |
 
 Errors match the legacy contract: validation **400** with `{ "message": "validation failed", "errors": { ... } }`, JSON issues **400** with `{ "message": "invalid JSON payload" }`, missing resources **404** with `{ "message": "<resource> not found" }`.
 

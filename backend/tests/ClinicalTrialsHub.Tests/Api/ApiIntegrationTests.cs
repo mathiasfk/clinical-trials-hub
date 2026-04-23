@@ -308,9 +308,86 @@ public sealed class ApiIntegrationTests
             Assert.That(paths.TryGetProperty("/api/studies", out _), Is.True);
             Assert.That(paths.TryGetProperty("/api/studies/{id}", out _), Is.True);
             Assert.That(paths.TryGetProperty("/api/studies/{id}/eligibility", out _), Is.True);
+            Assert.That(paths.TryGetProperty("/api/studies/{id}/similar-suggestions", out _), Is.True);
             Assert.That(paths.TryGetProperty("/api/eligibility-dimensions", out _), Is.True);
             Assert.That(paths.TryGetProperty("/health", out _), Is.True);
         });
+    }
+
+    [Test]
+    public async Task Get_similar_suggestions_unknown_study_returns_404()
+    {
+        await using var factory = new ClinicalTrialsApiFactory();
+        var client = factory.CreateClient();
+        var response = await client.GetAsync(new Uri("/api/studies/study-9999/similar-suggestions", UriKind.Relative));
+        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+    }
+
+    [Test]
+    public async Task Get_similar_suggestions_invalid_limit_returns_400()
+    {
+        await using var factory = new ClinicalTrialsApiFactory();
+        var client = factory.CreateClient();
+        var zero = await client.GetAsync(new Uri("/api/studies/study-0001/similar-suggestions?limit=0", UriKind.Relative));
+        Assert.That(zero.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+        var eleven = await client.GetAsync(new Uri("/api/studies/study-0001/similar-suggestions?limit=11", UriKind.Relative));
+        Assert.That(eleven.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+    }
+
+    [Test]
+    public async Task Get_similar_suggestions_seeded_corpus_returns_distinct_supplemental_criteria()
+    {
+        await using var factory = new ClinicalTrialsApiFactory();
+        var client = factory.CreateClient();
+        var response = await client.GetAsync(new Uri("/api/studies/study-0001/similar-suggestions?limit=3", UriKind.Relative));
+        response.EnsureSuccessStatusCode();
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var data = doc.RootElement.GetProperty("data");
+        Assert.That(data.GetArrayLength(), Is.GreaterThanOrEqualTo(1));
+        Assert.That(
+            data[0].GetProperty("criterion").GetProperty("description").GetString(),
+            Does.Contain("supplemental BMI"));
+    }
+
+    [Test]
+    public async Task Get_similar_suggestions_returns_ranked_suggestions_after_eligibility_distinctness()
+    {
+        await using var factory = new ClinicalTrialsApiFactory();
+        var client = factory.CreateClient();
+        var eligibility = new
+        {
+            inclusionCriteria = new[]
+            {
+                new
+                {
+                    description = "Integration unique BMI cap",
+                    deterministicRule = new
+                    {
+                        dimensionId = "BMI",
+                        @operator = "<",
+                        value = 32,
+                        unit = "kg/m²",
+                    },
+                },
+            },
+            exclusionCriteria = Array.Empty<object>(),
+        };
+
+        // study-0003 shares therapeutic area/phase/type with study-0001 and is ranked before study-0002 for similarity.
+        var put = await client.PutAsJsonAsync("/api/studies/study-0003/eligibility", eligibility);
+        put.EnsureSuccessStatusCode();
+
+        var response = await client.GetAsync(new Uri("/api/studies/study-0001/similar-suggestions?limit=3", UriKind.Relative));
+        response.EnsureSuccessStatusCode();
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var data = doc.RootElement.GetProperty("data");
+        Assert.That(data.GetArrayLength(), Is.GreaterThanOrEqualTo(1));
+        var first = data[0];
+        Assert.That(first.GetProperty("sourceStudyId").GetString(), Is.EqualTo("study-0003"));
+        Assert.That(first.GetProperty("group").GetString(), Is.EqualTo("inclusion"));
+        Assert.That(
+            first.GetProperty("criterion").GetProperty("description").GetString(),
+            Does.Contain("Integration unique BMI"));
     }
 
     [Test]
