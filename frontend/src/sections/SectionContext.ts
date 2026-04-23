@@ -45,5 +45,11 @@ export interface NewSectionContext extends CommonSectionContext {
 export type SectionOutletContext = EditSectionContext | NewSectionContext
 
 export function useSectionContext(): SectionOutletContext {
-  return useOutletContext<SectionOutletContext>()
+  const context = useOutletContext<SectionOutletContext | undefined>()
+  if (context === undefined) {
+    throw new Error(
+      'useSectionContext must be used within a study workspace outlet (new study wizard or edit study routes).',
+    )
+  }
+  return context
 }

@@ -9,7 +9,7 @@ import {
   nextSection,
 } from './constants'
 import { FieldError } from './EligibilityEditor'
-import { extractErrorMessage } from './eligibilityDrafts'
+import { extractErrorMessage } from '../extractErrorMessage'
 import { SectionFooter } from './SectionFooter'
 import { useSectionContext } from './SectionContext'
 import type { StudyInformationData } from './validation'

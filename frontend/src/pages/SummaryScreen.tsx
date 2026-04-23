@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { ConfirmModal } from '../components/ConfirmModal'
+import { extractErrorMessage } from '../extractErrorMessage'
 import type { EligibilityCriterion, Study } from '../types'
 import { SECTION_LABELS } from '../sections/constants'
 import type { SectionSlug } from '../sections/constants'
@@ -131,7 +132,7 @@ function NewStudySummary({ ctx }: { ctx: NewSectionContext }) {
       const created = await ctx.publishDraft()
       navigate(`/studies/${created.id}/summary`)
     } catch (error) {
-      setPublishError(extractMessage(error, 'Failed to publish study.'))
+      setPublishError(extractErrorMessage(error, 'Failed to publish study.'))
     } finally {
       setIsPublishing(false)
     }
@@ -338,12 +339,3 @@ function NewEligibilityContent({ data }: { data: EligibilityData }) {
   )
 }
 
-function extractMessage(error: unknown, fallback: string): string {
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const message = (error as { message?: unknown }).message
-    if (typeof message === 'string') {
-      return message
-    }
-  }
-  return fallback
-}

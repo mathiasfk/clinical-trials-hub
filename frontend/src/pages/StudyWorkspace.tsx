@@ -7,7 +7,7 @@ import {
   updateStudyEligibility,
 } from '../api'
 import type { EligibilityDimension, Study, StudyCreateInput, StudyEligibilityInput } from '../types'
-import { extractErrorMessage } from '../sections/eligibilityDrafts'
+import { extractErrorMessage } from '../extractErrorMessage'
 import type { EditSectionContext } from '../sections/SectionContext'
 
 interface StudyWorkspaceProps {

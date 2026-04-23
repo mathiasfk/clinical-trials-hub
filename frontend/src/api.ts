@@ -14,9 +14,32 @@ function apiUrl(path: string): string {
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
-  const payload = (await response.json()) as T | ApiErrorResponse
+  const text = await response.text()
+  let payload: unknown
+  if (text.length === 0) {
+    payload = undefined
+  } else {
+    try {
+      payload = JSON.parse(text) as unknown
+    } catch {
+      const message = response.ok
+        ? 'Unexpected response from server (invalid JSON).'
+        : `Request failed (${response.status}). The server sent an invalid or non-JSON response.`
+      throw { message } satisfies ApiErrorResponse
+    }
+  }
+
   if (!response.ok) {
-    throw payload
+    if (typeof payload === 'object' && payload !== null) {
+      throw payload
+    }
+    throw {
+      message: `Request failed (${response.status}).`,
+    } satisfies ApiErrorResponse
+  }
+
+  if (payload === undefined) {
+    throw { message: 'Empty response from server.' } satisfies ApiErrorResponse
   }
 
   return payload as T

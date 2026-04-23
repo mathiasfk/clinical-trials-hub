@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { EligibilityCriterion, Study } from '../types'
 import { ELIGIBILITY_SKILLS } from './skills'
 import { createInitialState, reducer } from './state'
-import type { AssistantContext, AssistantTurn } from './types'
+import type { AssistantContext, AssistantTurn, SkillDefinition } from './types'
 
 function criterion(
   description: string,
@@ -99,6 +99,33 @@ describe('reducer — CLEAR_CHAT', () => {
       'copy-from-study',
       'suggest-relevant-criteria',
     ])
+  })
+})
+
+describe('reducer — BACK_TO_MAIN with custom skills', () => {
+  it('rebuilds the root menu from the skills stored in state', () => {
+    const customSkills: SkillDefinition[] = [
+      {
+        id: 'custom-only',
+        label: 'Custom skill',
+        action: { type: 'START_COPY_FROM_STUDY' },
+      },
+    ]
+    let state = createInitialState(customSkills)
+    expect(state.skills).toEqual(customSkills)
+    expect(lastMenuOptions(state.thread).map((o) => o.id)).toEqual(['custom-only'])
+
+    state = reducer(state, {
+      type: 'SELECT_OPTION',
+      optionId: 'custom-only',
+      context: makeContext(),
+    })
+    state = reducer(state, {
+      type: 'SELECT_OPTION',
+      optionId: 'back-to-main',
+      context: makeContext(),
+    })
+    expect(lastMenuOptions(state.thread).map((o) => o.id)).toEqual(['custom-only'])
   })
 })
 
@@ -257,13 +284,6 @@ describe('suggest-relevant-criteria flow (server-shaped reducer)', () => {
     menu = lastMenuOptions(state.thread)
     expect(menu.map((option) => option.id)).toEqual(['suggest-three-more', 'back-to-main'])
 
-    const contextAfterAdd: AssistantContext = {
-      ...context,
-      currentStudy: {
-        ...context.currentStudy,
-        inclusionCriteria: [...context.currentStudy.inclusionCriteria, suggestedA],
-      },
-    }
     state = reducer(state, {
       type: 'SUGGEST_RELEVANT_STARTED',
       userLabel: 'Suggest three more',

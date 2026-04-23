@@ -9,10 +9,11 @@ import type { ApiErrorResponse, EligibilityCriterion } from '../types'
 import { nextSection } from './constants'
 import { CriteriaGroupEditor } from './EligibilityEditor'
 import type { CriterionDraft } from './eligibilityDrafts'
+import { extractErrorMessage } from '../extractErrorMessage'
 import {
+  completeDraftsToCriteria,
   criteriaToDrafts,
   draftsToCriteria,
-  extractErrorMessage,
 } from './eligibilityDrafts'
 import { SectionFooter } from './SectionFooter'
 import { useSectionContext } from './SectionContext'
@@ -89,8 +90,8 @@ function EligibilityForm() {
     () => ({
       currentStudy: {
         ...currentStudyMeta,
-        inclusionCriteria: draftsToCriteria(inclusionCriteria),
-        exclusionCriteria: draftsToCriteria(exclusionCriteria),
+        inclusionCriteria: completeDraftsToCriteria(inclusionCriteria, ctx.dimensions),
+        exclusionCriteria: completeDraftsToCriteria(exclusionCriteria, ctx.dimensions),
       },
       otherStudies,
       dimensions: ctx.dimensions,

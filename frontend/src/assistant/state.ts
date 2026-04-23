@@ -12,6 +12,8 @@ import type {
 } from './types'
 
 export interface AssistantState {
+  /** Root menu skills for this dock instance (used e.g. after “Back to main menu”). */
+  skills: SkillDefinition[]
   thread: AssistantTurn[]
   prompt: AssistantPrompt
   loadError: string | null
@@ -69,6 +71,7 @@ function rootPrompt(skills: SkillDefinition[]): AssistantPrompt {
 export function createInitialState(skills: SkillDefinition[] = ELIGIBILITY_SKILLS): AssistantState {
   const prompt = rootPrompt(skills)
   return {
+    skills,
     thread: [
       { kind: 'bot-text', id: nextId('turn'), text: INTRO_TEXT_1 },
       { kind: 'bot-text', id: nextId('turn'), text: INTRO_TEXT_2 },
@@ -175,7 +178,7 @@ function resolveAction(
       return state
 
     case 'BACK_TO_MAIN': {
-      const rootOptions = buildRootMenu(ELIGIBILITY_SKILLS)
+      const rootOptions = buildRootMenu(state.skills)
       const { thread, prompt } = appendBotTurns(
         threadWithUser,
         [{ kind: 'bot-text', id: nextId('turn'), text: 'Back to the main menu.' }],
@@ -198,7 +201,7 @@ function resolveAction(
       return acknowledgeCopy(state, context, threadWithUser, action)
 
     case 'ACCEPT_SUGGESTION':
-      return acknowledgeSuggestion(state, context, threadWithUser, action)
+      return acknowledgeSuggestion(state, threadWithUser, action)
 
     case 'RETRY_LOAD_OTHER_STUDIES': {
       const { thread, prompt } = appendBotTurns(
@@ -388,7 +391,6 @@ function acknowledgeCopy(
 
 function acknowledgeSuggestion(
   state: AssistantState,
-  context: AssistantContext,
   threadWithUser: AssistantTurn[],
   action: Extract<AssistantAction, { type: 'ACCEPT_SUGGESTION' }>,
 ): AssistantState {

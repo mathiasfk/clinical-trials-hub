@@ -65,12 +65,52 @@ export function formatRule(criterion: EligibilityCriterion, dimensions: Eligibil
   return `${label} ${criterion.deterministicRule.operator} ${criterion.deterministicRule.value}${criterion.deterministicRule.unit ? ` ${criterion.deterministicRule.unit}` : ''}`
 }
 
-export function extractErrorMessage(error: unknown, fallback: string): string {
-  if (typeof error === 'object' && error !== null && 'message' in error) {
-    const message = (error as { message?: unknown }).message
-    if (typeof message === 'string') {
-      return message
-    }
+/**
+ * Whether a draft row is complete enough to treat as a real criterion (e.g. for
+ * the eligibility assistant duplicate filter). Mirrors the rule checks in
+ * {@link validateEligibility} without requiring description text.
+ */
+export function isCriterionDraftComplete(
+  draft: CriterionDraft,
+  dimensions: EligibilityDimension[],
+): boolean {
+  if (!draft.dimensionId.trim() || !draft.operator) {
+    return false
   }
-  return fallback
+  const numeric =
+    draft.value.trim() === '' ? Number.NaN : Number(draft.value)
+  if (!Number.isFinite(numeric)) {
+    return false
+  }
+  const dimension = findDimension(dimensions, draft.dimensionId)
+  if (!dimension) {
+    return false
+  }
+  const unitTrimmed = draft.unit.trim()
+  const allowedUnits = dimension.allowedUnits ?? []
+  if (allowedUnits.length === 0 && unitTrimmed !== '') {
+    return false
+  }
+  if (allowedUnits.length > 0 && unitTrimmed === '') {
+    return false
+  }
+  return true
+}
+
+/** Maps only structurally complete draft rows to API-shaped criteria. */
+export function completeDraftsToCriteria(
+  drafts: CriterionDraft[],
+  dimensions: EligibilityDimension[],
+): EligibilityCriterion[] {
+  return drafts
+    .filter((draft) => isCriterionDraftComplete(draft, dimensions))
+    .map((draft) => ({
+      description: draft.description.trim(),
+      deterministicRule: {
+        dimensionId: draft.dimensionId,
+        operator: draft.operator as RuleOperator,
+        value: Number(draft.value.trim()),
+        unit: draft.unit.trim() || undefined,
+      },
+    }))
 }

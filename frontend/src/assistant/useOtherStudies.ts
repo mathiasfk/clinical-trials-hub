@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { listStudies } from '../api'
+import { extractErrorMessage } from '../extractErrorMessage'
 import type { Study } from '../types'
 
 export interface UseOtherStudiesResult {
@@ -41,12 +42,7 @@ export function useOtherStudies(
       setStudies(loaded)
       setHasFetched(true)
     } catch (caught) {
-      const message =
-        (caught as { message?: unknown } | undefined)?.message &&
-        typeof (caught as { message?: unknown }).message === 'string'
-          ? ((caught as { message: string }).message)
-          : 'Failed to load the list of studies.'
-      setError(message)
+      setError(extractErrorMessage(caught, 'Failed to load the list of studies.'))
     } finally {
       setIsLoading(false)
     }

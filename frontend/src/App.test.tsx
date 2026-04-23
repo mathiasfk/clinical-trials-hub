@@ -784,8 +784,8 @@ describe('Eligibility assistant', () => {
     window.history.pushState({}, '', `/studies/${SEED_STUDY.id}/eligibility`)
     fireEvent.popState(window)
     await screen.findByRole('heading', { name: /study-0001 > Eligibility criteria/i, level: 1 })
-
-    fireEvent.click(screen.getByRole('button', { name: /Open StudyHub assistant/i }))
+    const assistantFab = await screen.findByRole('button', { name: /Open StudyHub assistant/i })
+    fireEvent.click(assistantFab)
     expect(screen.getByText(/Welcome to StudyHub assistant/i)).toBeInTheDocument()
     expect(screen.queryByRole('textbox', { name: /Reference study id/i })).not.toBeInTheDocument()
   })
