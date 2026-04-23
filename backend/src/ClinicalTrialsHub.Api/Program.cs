@@ -29,7 +29,8 @@ builder.Services.AddOpenApi(
             {
                 document.Info.Title = "Clinical Trials Hub API";
                 document.Info.Version = "1.0";
-                document.Info.Description = "Clinical Trials Hub HTTP API (wire-compatible with the legacy Go service).";
+                document.Info.Description =
+                    "Clinical Trials Hub HTTP API (versioned REST under `/api/v1`; contract aligns with `frontend/src/types.ts`).";
 
                 document.Paths ??= new OpenApiPaths();
                 if (!document.Paths.ContainsKey("/health"))

@@ -5,8 +5,7 @@ using ClinicalTrialsHub.Infrastructure.Persistence;
 namespace ClinicalTrialsHub.Infrastructure.Bootstrap;
 
 /// <summary>
-/// Loads the seed catalog from embedded <c>seed-studies.json</c> (parity with repository root
-/// <c>seed.go</c> / <c>SeedStudies()</c>).
+/// Loads the seed catalog from embedded <c>seed-studies.json</c>.
 /// </summary>
 public static class StudySeeder
 {

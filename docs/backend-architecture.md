@@ -1,8 +1,8 @@
 # Backend architecture (.NET 10)
 
-This document describes the **current** ASP.NET Core backend under `backend/`. It replaces the earlier Go-centric description: the Go implementation now lives only under `backend-go-backup/` as a read-only behavioral reference.
+This document describes the ASP.NET Core backend under `backend/`.
 
-For product-level intent and capability links, see `openspec/changes/port-backend-to-dotnet/` (for example `proposal.md` and `specs/`).
+For normative platform requirements, see `openspec/specs/platform-bootstrap/spec.md`.
 
 ---
 
@@ -55,7 +55,7 @@ flowchart LR
 | PUT | `/api/v1/studies/{id}/eligibility` | Inclusion/exclusion only. |
 | GET | `/api/v1/studies/{id}/similar-suggestions` | Read-only ranked criterion suggestions for the assistant (`limit` 1–10, default 3). Heuristic: `StudySimilarityScorer` + walk order in `SimilaritySuggestionService`. |
 
-Errors match the legacy contract: validation **400** with `{ "message": "validation failed", "errors": { ... } }`, JSON issues **400** with `{ "message": "invalid JSON payload" }`, missing resources **404** with `{ "message": "<resource> not found" }`.
+Errors use these envelopes: validation **400** with `{ "message": "validation failed", "errors": { ... } }`, JSON issues **400** with `{ "message": "invalid JSON payload" }`, missing resources **404** with `{ "message": "<resource> not found" }`.
 
 ---
 
@@ -82,8 +82,3 @@ Swashbuckle is intentionally not used.
 - **Container:** `backend/Dockerfile` — multi-stage SDK 10 / ASP.NET 10 runtime, port **8080**.
 - **Fly.io:** `backend/fly.toml` — internal port 8080, HTTP check on `/health`. CORS origins are expected via secrets (see `fly.toml` comments).
 
----
-
-## 7. Legacy reference
-
-`backend-go-backup/` remains until the .NET backend is fully validated in production; it is not part of the active build. See the OpenSpec change log in `openspec/changes/port-backend-to-dotnet/proposal.md`.

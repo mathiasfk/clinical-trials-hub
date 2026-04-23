@@ -4,8 +4,9 @@ This document describes the architecture of the `frontend/` package: its
 runtime stack, how the source tree is organised, how state and data flow
 through the app, and the main design choices behind the structure.
 
-The frontend is a single-page React application that talks to the Go backend
-over a small REST surface (`/api/v1/studies`, `/api/v1/eligibility-dimensions`). It
+The frontend is a single-page React application that talks to the ASP.NET Core
+API over a small REST surface (`/api/v1/studies`, `/api/v1/eligibility-dimensions`,
+`/api/v1/studies/{id}/similar-suggestions`). It
 exposes two primary flows on top of that API:
 
 1. Browsing and filtering the registered study catalog.
@@ -48,11 +49,12 @@ frontend/
 ├── vercel.json                SPA fallback rewrite
 ├── eslint.config.js           Flat config (recommended + react-hooks + react-refresh)
 ├── tsconfig*.json             Bundler-mode TS config
-├── public/                    Static assets (favicon, icons.svg)
+├── public/                    Static assets (favicon.png, icons.svg)
 └── src/
     ├── main.tsx               createRoot(...).render(<StrictMode><App /></StrictMode>)
     ├── App.tsx                BrowserRouter + route tree + top-level data
     ├── api.ts                 Thin fetch wrappers, typed responses
+    ├── extractErrorMessage.ts Normalise unknown errors → user-visible string
     ├── types.ts               Domain types shared with the backend contract
     ├── index.css              Design tokens + global element resets
     ├── App.css                Shell + pages + forms styles
@@ -385,14 +387,23 @@ A deliberately thin wrapper around `fetch`:
 - `apiUrl(path)` prefixes the path with `VITE_API_URL` when it is set
   (production build on Vercel hitting fly.io), otherwise returns the path
   unchanged so the Vite dev proxy can forward `/api` to `localhost:8080`.
-- `parseResponse<T>` parses the JSON and **throws the parsed payload on
-  non-2xx** so callers can narrow to `ApiErrorResponse` and surface
-  `errors` per-field.
-- The surface is exactly: `listStudies`, `getStudyById`, `createStudy`,
-  `replaceStudy`, `updateStudyEligibility`, `listEligibilityDimensions`.
+- Successful responses from the API use a **`{ data: T }` envelope**; each
+  wrapper unwraps `data` before returning `T` to the rest of the app.
+- `parseResponse<T>` reads the response body, parses JSON when present, and
+  returns `T` on 2xx. On **non-2xx** it **throws the parsed object** when the
+  body is JSON so callers can narrow to `ApiErrorResponse` and surface
+  `errors` per-field. **Empty bodies**, **invalid JSON**, and **non-JSON error
+  bodies** throw a minimal `{ message }` shape instead of a raw `SyntaxError`.
+- The exported surface is: `listStudies`, `getStudyById`, `createStudy`,
+  `replaceStudy`, `updateStudyEligibility` (`PUT` to
+  `/api/v1/studies/{id}/eligibility`), `listEligibilityDimensions`, and
+  `getSimilarSuggestions` (assistant; `GET` with `limit` query).
 
 There is no client-side cache layer; re-fetches are explicit and callers
 decide when to refresh.
+
+`App.tsx` uses `extractErrorMessage` from `extractErrorMessage.ts` when a
+catalog fetch fails so list/dimension errors always show a readable string.
 
 ---
 
@@ -408,6 +419,8 @@ interface EditSectionContext {
   mode: 'edit'
   studyId: string
   study: Study | null
+  isLoadingStudy: boolean
+  loadError: string
   replaceStudy: (input: StudyCreateInput) => Promise<Study>
   updateEligibility: (input: StudyEligibilityInput) => Promise<Study>
   // + dimensions, isLoadingDimensions, dimensionsError, refreshDimensions
@@ -565,7 +578,10 @@ DOM inspectable without a build toolchain in the way.
 src/
 ├── App.test.tsx                        High-level flows: navigate, list, filter,
 │                                       publish, edit, assistant integration
-├── sections/validation.test.ts         Pure validators (happy + edge cases)
+├── api.test.ts                         `{ data }` envelope + similar-suggestions parsing
+├── sections/
+│   ├── validation.test.ts              Pure validators (happy + edge cases)
+│   └── eligibilityDrafts.test.ts       Draft ↔ criterion conversions
 └── assistant/
     ├── similarity.test.ts              Criterion equality + draft filters
     ├── state.test.ts                   Reducer transitions end-to-end
@@ -584,10 +600,10 @@ src/
 
 ## Build and deployment
 
-- `npm run dev` — Vite dev server on `:5173` with `/api` proxied to
+- `pnpm dev` — Vite dev server on `:5173` with `/api` proxied to
   `localhost:8080`. HMR on.
-- `npm run build` — `tsc -b` type-check, then `vite build` to `dist/`.
-- `npm run preview` — static preview of the built bundle.
+- `pnpm run build` — `tsc -b` type-check, then `vite build` to `dist/`.
+- `pnpm run preview` — static preview of the built bundle.
 - `vercel.json` rewrites every path back to `/index.html` so React Router
   owns client-side routing in production.
 - `VITE_API_URL` (at build time) selects the remote backend; if empty, the

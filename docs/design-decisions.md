@@ -7,7 +7,7 @@ constraints of a short-lived prototype.
 
 ## 1. Why the "Study Design" module was chosen
 
-In the materials I had access to I could have a basic idea of how several modules work (Study Design, Country Allocation, Site Selection, Study Start-up, Study Execution, Resource Management and Cost Management).
+In the materials I had access to, I could have a basic idea of how several modules work (Study Design, Country Allocation, Site Selection, Study Start-up, Study Execution, Resource Management and Cost Management).
 Among them, the
 **Study Design** was the one with the richest amount of information visible: objectives, endpoints, I/E criteria, number of participants, study type, number of arms, phase, therapeutic area and patient
 population.
@@ -23,40 +23,27 @@ hooks but not enough detail for me to reconstruct their behaviour with
 confidence. Picking Study Design allowed the POC to go deep on a single
 coherent flow instead of going shallow across many.
 
-## 2. Why Go on the backend
-
-A real product in this space would most likely live on .NET, which I am
-comfortable with. I deliberately chose **Go** for this POC for two reasons:
-
-1. Over the last year I have been working exclusively with Go, so it is where
-   my muscle memory is sharpest. Using it removes context-switching cost and
-   lets me focus on product behaviour instead of fighting framework details.
-2. I already have a hosting pipeline ready for Go services using [fly.io](https://fly.io/).
-
-The stack does not mirror how a .NET project would be structured, but the domain code is organised around small packages (`domain`,
-`repository`, `service`, etc) that translate cleanly into any layered architecture.
-
-## 3. Why React + Vite + pnpm on the frontend
+## 2. Why React + Vite + pnpm on the frontend
 
 This combination is optimised for the kind of work a POC demands: fast
 iteration and short feedback loops.
 
 - **Vite** gives near-instant cold starts and reliable hot reload, which matters
   when quickly iterating over a new project.
-- **pnpm** keeps installs way faster in comparisson with npm.
+- **pnpm** keeps installs way faster in comparison with npm.
 - **React** is the frontend framework I am most fluent in, which keeps the focus on the product rather than on syntax.
 
-## 4. Why an in-memory storage
+## 3. Why in-memory storage
 
 I chose not to introduce a real database for the POC. A real database would
 pull in operational complexity (host, connection string, migrations,
 lifecycle) that does not exercise any product decision — it only exercises
 infrastructure.
 
-To keep that decision reversible, the backend service layer depends on an repository **interface**, not on the in-memory implementation. Swapping the
-storage engine (for example, a PostgreSQL adapter) would be pretty easy.
+To keep that decision reversible, the backend service layer depends on a repository **interface**, not on the in-memory implementation. Using EF Core also makes swapping the
+storage engine (to PostgreSQL, for example) pretty easy.
 
-## 5. Why a deterministic chat assistant instead of an LLM
+## 4. Why a deterministic chat assistant instead of an LLM
 
 The StudyHub assistant on the "Eligibility criteria" screen looks like a
 chat agent, but it is intentionally **not** AI in this POC. Given the tight timebox, a

@@ -73,9 +73,9 @@ All newly created repository artifacts in this change MUST use English, includin
 - **WHEN** maintainers review the .NET backend's log message templates
 - **THEN** every `ILogger` call SHALL use an English message template with semantic placeholders (no string interpolation), so structured-log consumers receive a consistent, English vocabulary
 
-### Requirement: Backend HTTP contract is preserved across the .NET port
+### Requirement: Backend HTTP contract matches the front-end
 
-The system SHALL expose the same HTTP request/response contract as the previous Go-backed MVP, byte-compatible from the front-end's perspective aside from the **`/api/v1`** REST path prefix (for example `/api/v1/studies` instead of `/api/studies`). The .NET backend SHALL preserve every method, status code, request body shape, response body shape, and JSON casing currently exercised by the front-end (`frontend/src/api.ts` and `frontend/src/types.ts`). JSON SHALL be serialized in `camelCase`, responses SHALL wrap successful payloads in a `{ "data": ... }` envelope, and error responses SHALL use the `{ "message": <string>, "errors"?: { <field>: <message> } }` envelope. Unknown JSON fields on any request body SHALL be rejected with HTTP `400` and a `"message": "invalid JSON payload"` error envelope. The legacy Go-generated artifacts at `backend/docs/swagger.{json,yaml}` are treated as an initial reference only and MAY be deleted when the native .NET OpenAPI artifact is in place.
+The system SHALL expose an HTTP request/response contract that is byte-compatible from the front-end's perspective under the **`/api/v1`** REST path prefix (for example `/api/v1/studies`). The backend SHALL preserve every method, status code, request body shape, response body shape, and JSON casing currently exercised by the front-end (`frontend/src/api.ts` and `frontend/src/types.ts`). JSON SHALL be serialized in `camelCase`, responses SHALL wrap successful payloads in a `{ "data": ... }` envelope, and error responses SHALL use the `{ "message": <string>, "errors"?: { <field>: <message> } }` envelope. Unknown JSON fields on any request body SHALL be rejected with HTTP `400` and a `"message": "invalid JSON payload"` error envelope. The committed OpenAPI export at `backend/docs/openapi.json` SHALL describe this same surface for tooling.
 
 #### Scenario: Front-end calls succeed against the versioned REST surface
 
@@ -116,10 +116,10 @@ The system SHALL document the API surface using the native ASP.NET Core OpenAPI 
 - **WHEN** a developer inspects the backend solution's `Directory.Packages.props` and every project's `.csproj`
 - **THEN** no project SHALL declare a `<PackageReference>` to `Swashbuckle.AspNetCore` or any `Swashbuckle.*` sub-package
 
-#### Scenario: Legacy Swagger reference files are optional
+#### Scenario: Committed OpenAPI artifact is canonical for tooling
 
-- **WHEN** the native .NET OpenAPI artifact at `backend/docs/openapi.json` is published and covers every public endpoint
-- **THEN** the legacy Go-generated `backend/docs/swagger.json` and `backend/docs/swagger.yaml` files MAY be deleted from the repository, and their removal SHALL NOT break any part of the backend build, test, or deployment pipeline
+- **WHEN** the .NET OpenAPI artifact at `backend/docs/openapi.json` is produced by `dotnet build` and covers every public endpoint
+- **THEN** that file SHALL remain the machine-readable contract checked into the repository for downstream tooling, and the backend build, test, and deployment pipeline SHALL NOT depend on any duplicate OpenAPI document in another format or path
 
 ### Requirement: Backend uses Minimal APIs with layered hexagonal organization
 

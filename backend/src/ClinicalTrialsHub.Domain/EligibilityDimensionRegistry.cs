@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace ClinicalTrialsHub.Domain;
 
 /// <summary>
-/// Canonical eligibility dimension definitions (ported from <c>backend-go-backup/internal/domain/eligibility.go</c>).
+/// Canonical eligibility dimension definitions for the MVP catalog.
 /// </summary>
 public static class EligibilityDimensionRegistry
 {
