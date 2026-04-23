@@ -1,0 +1,599 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Clinical Trials Hub API",
+    "description": "Clinical Trials Hub HTTP API (wire-compatible with the legacy Go service).",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/eligibility-dimensions": {
+      "get": {
+        "tags": [
+          "eligibility"
+        ],
+        "summary": "List eligibility dimensions",
+        "description": "Returns deterministic-rule dimension metadata (IDs, display names, allowed units).",
+        "operationId": "GetEligibilityDimensions",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "405": {
+            "description": "Method Not Allowed",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/studies": {
+      "get": {
+        "tags": [
+          "studies"
+        ],
+        "summary": "List studies",
+        "description": "Returns every registered study ordered by ascending numeric study id suffix.",
+        "operationId": "ListStudies",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyListResponseDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "studies"
+        ],
+        "summary": "Create study",
+        "description": "Registers a new study; the server assigns the next contiguous study-NNNN identifier.",
+        "operationId": "CreateStudy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudyCreateInputDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/studies/{id}": {
+      "get": {
+        "tags": [
+          "studies"
+        ],
+        "summary": "Get study by id",
+        "description": "Fetches a single study aggregate including eligibility criteria.",
+        "operationId": "GetStudyById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "studies"
+        ],
+        "summary": "Replace study",
+        "description": "Fully replaces an existing study, including eligibility criteria, while keeping the same id.",
+        "operationId": "ReplaceStudy",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudyCreateInputDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/studies/{id}/eligibility": {
+      "put": {
+        "tags": [
+          "studies"
+        ],
+        "summary": "Update eligibility only",
+        "description": "Updates inclusion and exclusion criteria without changing other study fields.",
+        "operationId": "UpdateStudyEligibility",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudyEligibilityInputDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Liveness probe returning a minimal JSON payload.",
+        "operationId": "Health",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DeterministicRuleDto": {
+        "required": [
+          "dimensionId",
+          "operator",
+          "value",
+          "unit"
+        ],
+        "type": "object",
+        "properties": {
+          "dimensionId": {
+            "type": "string"
+          },
+          "operator": {
+            "type": "string"
+          },
+          "value": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "format": "double"
+          },
+          "unit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "EligibilityCriterionDto": {
+        "required": [
+          "description",
+          "deterministicRule"
+        ],
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "deterministicRule": {
+            "$ref": "#/components/schemas/DeterministicRuleDto"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "StudyCreateInputDto": {
+        "required": [
+          "objectives",
+          "endpoints",
+          "inclusionCriteria",
+          "exclusionCriteria",
+          "participants",
+          "studyType",
+          "numberOfArms",
+          "phase",
+          "therapeuticArea",
+          "patientPopulation",
+          "firstPatientFirstVisit",
+          "lastPatientFirstVisit",
+          "protocolApprovalDate"
+        ],
+        "type": "object",
+        "properties": {
+          "objectives": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inclusionCriteria": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EligibilityCriterionDto"
+            }
+          },
+          "exclusionCriteria": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EligibilityCriterionDto"
+            }
+          },
+          "participants": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "studyType": {
+            "type": "string"
+          },
+          "numberOfArms": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "therapeuticArea": {
+            "type": "string"
+          },
+          "patientPopulation": {
+            "type": "string"
+          },
+          "firstPatientFirstVisit": {
+            "type": "string"
+          },
+          "lastPatientFirstVisit": {
+            "type": "string"
+          },
+          "protocolApprovalDate": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StudyDto": {
+        "required": [
+          "id",
+          "objectives",
+          "endpoints",
+          "inclusionCriteria",
+          "exclusionCriteria",
+          "participants",
+          "studyType",
+          "numberOfArms",
+          "phase",
+          "therapeuticArea",
+          "patientPopulation",
+          "firstPatientFirstVisit",
+          "lastPatientFirstVisit",
+          "protocolApprovalDate"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "objectives": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "inclusionCriteria": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EligibilityCriterionDto"
+            }
+          },
+          "exclusionCriteria": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EligibilityCriterionDto"
+            }
+          },
+          "participants": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "studyType": {
+            "type": "string"
+          },
+          "numberOfArms": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "therapeuticArea": {
+            "type": "string"
+          },
+          "patientPopulation": {
+            "type": "string"
+          },
+          "firstPatientFirstVisit": {
+            "type": "string"
+          },
+          "lastPatientFirstVisit": {
+            "type": "string"
+          },
+          "protocolApprovalDate": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StudyEligibilityInputDto": {
+        "required": [
+          "inclusionCriteria",
+          "exclusionCriteria"
+        ],
+        "type": "object",
+        "properties": {
+          "inclusionCriteria": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EligibilityCriterionDto"
+            }
+          },
+          "exclusionCriteria": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EligibilityCriterionDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "StudyListResponseDto": {
+        "required": [
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudyDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "StudyResponseDto": {
+        "required": [
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StudyDto"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "eligibility"
+    },
+    {
+      "name": "studies"
+    }
+  ]
+}

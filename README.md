@@ -5,7 +5,7 @@ This repository contains an MVP for a clinical study registration module.
 ## Stack
 
 - Frontend: React + Vite + pnpm
-- Backend: Go
+- Backend: ASP.NET Core (.NET 10)
 - Database: In-memory repository with deterministic seed data
 
 ## MVP Scope
@@ -37,50 +37,59 @@ It also includes:
 
 ```text
 clinical-trials-hub/
-├── backend/   # Go API and in-memory repository
+├── backend/   # .NET 10 solution: Domain, Application, Infrastructure, Api + tests (see backend/README.md)
 ├── frontend/  # React + Vite UI
-├── docs/      # Product notes and outlines
+├── docs/      # Product notes, backend architecture, outlines
 └── openspec/  # Change proposal, specs, and implementation tasks
 ```
 
 ## Local Development
 
+More detail: [backend/README.md](backend/README.md) and [frontend/README.md](frontend/README.md).
+
 ### Backend
 
-```bash
-cd backend
-go test ./...
-go run ./cmd/api
-```
-
-The API runs on `http://localhost:8080` by default.
-
-#### OpenAPI (Swagger) contract
-
-The HTTP contract is generated with [swag](https://github.com/swaggo/swag) and committed under [`backend/docs/`](backend/docs/):
-
-- [`backend/docs/swagger.yaml`](backend/docs/swagger.yaml) — primary handoff for .NET tooling (for example NSwag or Swashbuckle import of an OpenAPI file).
-- [`backend/docs/swagger.json`](backend/docs/swagger.json) — same contract in JSON.
-
-Regenerate after changing handlers or Swag comments (run from the `backend/` directory):
+The backend is a **four-project** solution (`ClinicalTrialsHub.Domain`, `ClinicalTrialsHub.Application`, `ClinicalTrialsHub.Infrastructure`, `ClinicalTrialsHub.Api`) plus `ClinicalTrialsHub.Tests`. Persistence is **EF Core InMemory** behind `IStudyRepository` (Infrastructure only). API docs are **native OpenAPI** at `/openapi/v1.json` and **Scalar** at `/scalar/v1`.
 
 ```bash
 cd backend
-go generate ./...
+dotnet run --project src/ClinicalTrialsHub.Api/ClinicalTrialsHub.Api.csproj
 ```
 
-While the API is running, Swagger UI is served at [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html) (trailing `index.html` may be required depending on the browser).
+The API listens on **`http://localhost:8080`** by default (same port the Vite proxy targets). See [backend/README.md](backend/README.md).
+
+```bash
+cd backend
+dotnet test ClinicalTrialsHub.sln
+```
+
+### Manual smoke (frontend + backend)
+
+With the API on **8080** and the UI on **5173**:
+
+1. Start the API: `cd backend && dotnet run --project src/ClinicalTrialsHub.Api/ClinicalTrialsHub.Api.csproj`
+2. Start the UI with the API URL: `cd frontend && VITE_API_URL=http://localhost:8080 pnpm dev`
+3. In the browser: open **All Studies**, complete the new-study wizard through **Publish**, edit eligibility and **Save**, and confirm the assistant can load another study by id (`GET /api/studies/{id}`).
+4. Open `http://localhost:8080/scalar/v1` and confirm every HTTP operation is listed.
 
 ### Frontend
 
 ```bash
 cd frontend
-pnpm install --no-frozen-lockfile
-pnpm test
+pnpm install
 pnpm dev
 ```
 
-The Vite dev server proxies `/api` requests to `http://localhost:8080`.
+The Vite dev server is at **`http://localhost:5173`** and proxies `/api` to **`http://localhost:8080`**.
+
+### API contract and docs
+
+When the API is running, OpenAPI JSON is served at `/openapi/v1.json` and the Scalar reference UI at `/scalar/v1` (same host and port as the API).
+
+Committed OpenAPI snapshots (optional handoff for tooling) live under [`backend/docs/`](backend/docs/):
+
+- [`backend/docs/openapi.json`](backend/docs/openapi.json)
+- [`backend/docs/ClinicalTrialsHub.Api.json`](backend/docs/ClinicalTrialsHub.Api.json)
 
 ## API Endpoints
 
@@ -92,15 +101,8 @@ The Vite dev server proxies `/api` requests to `http://localhost:8080`.
 - `PUT /api/studies/:id`
 - `PUT /api/studies/:id/eligibility`
 
-For request and response schemas, use the OpenAPI files under `backend/docs/` (see **OpenAPI (Swagger) contract** above).
+For request and response schemas, use the running API (`/openapi/v1.json`) or the files under `backend/docs/` above.
 
-## Postgres Compatibility (Phase 2)
+## Postgres compatibility (phase 2)
 
-The backend service layer depends on `StudyRepository` interfaces only.  
-To move from in-memory to Postgres:
-
-1. Implement a Postgres adapter that satisfies `StudyRepository`.
-2. Wire the new adapter in `cmd/api/main.go`.
-3. Keep service and handler layers unchanged.
-
-This boundary keeps the migration focused on infrastructure instead of domain logic.
+The application layer depends on **`IStudyRepository`** only. To move from EF InMemory to PostgreSQL, swap the Infrastructure implementation (provider + migrations) and keep Domain/Application contracts unchanged.

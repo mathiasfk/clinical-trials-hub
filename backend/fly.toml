@@ -1,0 +1,30 @@
+# Fly.io deployment for Clinical Trials Hub API (.NET 10)
+# See https://fly.io/docs/reference/configuration/
+
+app = "clinical-trials-hub-api"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "5s"
+    method = "GET"
+    path = "/health"
+
+# CORS: set allowed origins via secrets (indexed keys map to Cors:AllowedOrigins:0, Cors:AllowedOrigins:1, …)
+# Example:
+#   fly secrets set Cors__AllowedOrigins__0="https://your-frontend.example"
+
+[env]
+  ASPNETCORE_URLS = "http://+:8080"

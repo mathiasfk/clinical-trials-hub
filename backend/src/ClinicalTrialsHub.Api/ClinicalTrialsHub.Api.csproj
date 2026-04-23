@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <OpenApiDocumentsDirectory>$(MSBuildProjectDirectory)\..\..\docs</OpenApiDocumentsDirectory>
+    <NoWarn>$(NoWarn);ASPDEPR002</NoWarn>
+  </PropertyGroup>
+  <Target Name="CopyOpenApiAsOpenapiJson" AfterTargets="GenerateOpenApiDocuments">
+    <Copy
+      SourceFiles="$(OpenApiDocumentsDirectory)\ClinicalTrialsHub.Api.json"
+      DestinationFiles="$(OpenApiDocumentsDirectory)\openapi.json"
+      SkipUnchangedFiles="true" />
+  </Target>
+  <ItemGroup>
+    <ProjectReference Include="..\ClinicalTrialsHub.Application\ClinicalTrialsHub.Application.csproj" />
+    <ProjectReference Include="..\ClinicalTrialsHub.Infrastructure\ClinicalTrialsHub.Infrastructure.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" />
+    <PackageReference Include="Microsoft.OpenApi" />
+    <PackageReference Include="Scalar.AspNetCore" />
+  </ItemGroup>
+</Project>
