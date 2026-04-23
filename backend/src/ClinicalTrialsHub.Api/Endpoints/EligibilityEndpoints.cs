@@ -20,7 +20,7 @@ public static class EligibilityEndpoints
             .WithSummary("List eligibility dimensions")
             .WithDescription("Returns deterministic-rule dimension metadata (IDs, display names, allowed units).")
             .Produces(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status405MethodNotAllowed)
+            .Produces(StatusCodes.Status405MethodNotAllowed)
             .WithOpenApi();
     }
 }

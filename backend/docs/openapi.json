@@ -19,14 +19,7 @@
             "description": "OK"
           },
           "405": {
-            "description": "Method Not Allowed",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
+            "description": "Method Not Allowed"
           }
         }
       }
@@ -83,9 +76,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/ErrorResponseDto"
                 }
               }
             }
@@ -125,9 +118,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/ErrorResponseDto"
                 }
               }
             }
@@ -135,9 +128,9 @@
           "404": {
             "description": "Not Found",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/ErrorResponseDto"
                 }
               }
             }
@@ -185,9 +178,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/ErrorResponseDto"
                 }
               }
             }
@@ -195,9 +188,9 @@
           "404": {
             "description": "Not Found",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/ErrorResponseDto"
                 }
               }
             }
@@ -247,9 +240,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/ErrorResponseDto"
                 }
               }
             }
@@ -257,9 +250,9 @@
           "404": {
             "description": "Not Found",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/ErrorResponseDto"
                 }
               }
             }
@@ -311,9 +304,9 @@
           "400": {
             "description": "Bad Request",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/ErrorResponseDto"
                 }
               }
             }
@@ -321,9 +314,9 @@
           "404": {
             "description": "Not Found",
             "content": {
-              "application/problem+json": {
+              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
+                  "$ref": "#/components/schemas/ErrorResponseDto"
                 }
               }
             }
@@ -394,41 +387,24 @@
         },
         "additionalProperties": false
       },
-      "ProblemDetails": {
+      "ErrorResponseDto": {
+        "required": [
+          "message",
+          "errors"
+        ],
         "type": "object",
         "properties": {
-          "type": {
-            "type": [
-              "null",
-              "string"
-            ]
+          "message": {
+            "type": "string"
           },
-          "title": {
+          "errors": {
             "type": [
               "null",
-              "string"
-            ]
-          },
-          "status": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "null",
-              "integer",
-              "string"
+              "object"
             ],
-            "format": "int32"
-          },
-          "detail": {
-            "type": [
-              "null",
-              "string"
-            ]
-          },
-          "instance": {
-            "type": [
-              "null",
-              "string"
-            ]
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         },
         "additionalProperties": false

@@ -38,7 +38,7 @@ public static class StudiesEndpoints
             .WithSummary("Create study")
             .WithDescription("Registers a new study; the server assigns the next contiguous study-NNNN identifier.")
             .Produces<StudyResponseDto>(StatusCodes.Status201Created)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponseDto>(StatusCodes.Status400BadRequest)
             .WithOpenApi();
 
         group.MapGet(
@@ -57,8 +57,8 @@ public static class StudiesEndpoints
             .WithSummary("Get study by id")
             .WithDescription("Fetches a single study aggregate including eligibility criteria.")
             .Produces<StudyResponseDto>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status404NotFound)
+            .Produces<ErrorResponseDto>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponseDto>(StatusCodes.Status404NotFound)
             .WithOpenApi();
 
         group.MapPut(
@@ -78,8 +78,8 @@ public static class StudiesEndpoints
             .WithSummary("Replace study")
             .WithDescription("Fully replaces an existing study, including eligibility criteria, while keeping the same id.")
             .Produces<StudyResponseDto>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status404NotFound)
+            .Produces<ErrorResponseDto>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponseDto>(StatusCodes.Status404NotFound)
             .WithOpenApi();
 
         group.MapPut(
@@ -100,8 +100,8 @@ public static class StudiesEndpoints
             .WithSummary("Update eligibility only")
             .WithDescription("Updates inclusion and exclusion criteria without changing other study fields.")
             .Produces<StudyResponseDto>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status404NotFound)
+            .Produces<ErrorResponseDto>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponseDto>(StatusCodes.Status404NotFound)
             .WithOpenApi();
 
         group.MapGet(
@@ -137,8 +137,8 @@ public static class StudiesEndpoints
             .WithDescription(
                 "Returns up to `limit` eligibility criteria from other studies ranked by deterministic similarity to the target study.")
             .Produces<SimilarSuggestionsResponseDto>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status404NotFound)
+            .Produces<ErrorResponseDto>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponseDto>(StatusCodes.Status404NotFound)
             .WithOpenApi();
     }
 }

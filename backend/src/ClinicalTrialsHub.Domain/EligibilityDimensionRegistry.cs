@@ -62,15 +62,24 @@ public static class EligibilityDimensionRegistry
         return false;
     }
 
-    /// <summary>Looks up a dimension by id (case-insensitive). Returns <c>null</c> when unknown.</summary>
-    public static EligibilityDimension? FindById(string dimensionId)
+    /// <summary>
+    /// Resolves a dimension and returns a defensive copy of the definition, or <c>false</c> when unknown
+    /// (e.g. blank or not in the registry).
+    /// </summary>
+    public static bool TryGetDefinition(string input, [NotNullWhen(true)] out EligibilityDimension? definition)
     {
-        if (!TryResolveCanonicalId(dimensionId, out var canonicalId))
+        definition = null;
+        if (!TryResolveCanonicalId(input, out var canonicalId))
         {
-            return null;
+            return false;
         }
 
         var match = Dimensions.First(d => d.Id == canonicalId);
-        return new EligibilityDimension(match.Id, match.DisplayName, match.Description, match.AllowedUnits.ToArray());
+        definition = new EligibilityDimension(match.Id, match.DisplayName, match.Description, match.AllowedUnits.ToArray());
+        return true;
     }
+
+    /// <summary>Looks up a dimension by id (case-insensitive). Returns <c>null</c> when unknown.</summary>
+    public static EligibilityDimension? FindById(string dimensionId) =>
+        TryGetDefinition(dimensionId, out var def) ? def : null;
 }

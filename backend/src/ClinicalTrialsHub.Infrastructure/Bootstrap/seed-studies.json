@@ -1,0 +1,972 @@
+[
+  {
+    "id": "study-0001",
+    "objectives": [
+      "Assess efficacy of treatment X in moderate rheumatoid arthritis"
+    ],
+    "endpoints": [
+      "ACR20 response at Week 12",
+      "Safety profile through Week 24"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Participants must be at least 18 years old.",
+        "deterministicRule": {
+          "dimensionId": "age",
+          "operator": ">=",
+          "value": 18,
+          "unit": "years old"
+        }
+      },
+      {
+        "description": "Participants must have hsCRP above 2 mg/L.",
+        "deterministicRule": {
+          "dimensionId": "hsCRP",
+          "operator": ">",
+          "value": 2,
+          "unit": "mg/L"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "Participants with systolic blood pressure below 95 mmHg are excluded.",
+        "deterministicRule": {
+          "dimensionId": "SBP",
+          "operator": "<",
+          "value": 95,
+          "unit": "mmHg"
+        }
+      }
+    ],
+    "participants": 120,
+    "studyType": "parallel",
+    "numberOfArms": 2,
+    "phase": "Phase 2",
+    "therapeuticArea": "Cardiovascular",
+    "patientPopulation": "Adults with moderate rheumatoid arthritis",
+    "firstPatientFirstVisit": "2025-03-15",
+    "lastPatientFirstVisit": "2025-09-30",
+    "protocolApprovalDate": "2025-01-10"
+  },
+  {
+    "id": "study-0002",
+    "objectives": [
+      "Evaluate dose-ranging effect of treatment Y in type 2 diabetes"
+    ],
+    "endpoints": [
+      "HbA1c reduction at Week 16"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Participants must be older than 50 years.",
+        "deterministicRule": {
+          "dimensionId": "age",
+          "operator": ">",
+          "value": 50,
+          "unit": "years old"
+        }
+      },
+      {
+        "description": "Participants must have LVEF below 40%.",
+        "deterministicRule": {
+          "dimensionId": "LVEF",
+          "operator": "<",
+          "value": 40,
+          "unit": "%"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "Participants with systolic blood pressure below 95 mmHg are excluded.",
+        "deterministicRule": {
+          "dimensionId": "SBP",
+          "operator": "<",
+          "value": 95,
+          "unit": "mmHg"
+        }
+      }
+    ],
+    "participants": 180,
+    "studyType": "parallel",
+    "numberOfArms": 3,
+    "phase": "Phase 2",
+    "therapeuticArea": "Diabetes",
+    "patientPopulation": "Adults with type 2 diabetes uncontrolled on oral therapy",
+    "firstPatientFirstVisit": "",
+    "lastPatientFirstVisit": "",
+    "protocolApprovalDate": ""
+  },
+  {
+    "id": "study-0003",
+    "objectives": [
+      "Compare imaging-guided left atrial appendage closure strategies on procedural success and periprocedural complications"
+    ],
+    "endpoints": [
+      "Device success rate at index procedure",
+      "Major bleeding or pericardial effusion requiring intervention through 30 days"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Left ventricular ejection fraction at least 30 percent for procedural eligibility.",
+        "deterministicRule": {
+          "dimensionId": "LVEF",
+          "operator": ">=",
+          "value": 30,
+          "unit": "%"
+        }
+      },
+      {
+        "description": "Office systolic blood pressure controlled below 160 mmHg on stable therapy.",
+        "deterministicRule": {
+          "dimensionId": "SBP",
+          "operator": "<",
+          "value": 160,
+          "unit": "mmHg"
+        }
+      },
+      {
+        "description": "Diastolic blood pressure below 100 mmHg on stable antihypertensive regimen.",
+        "deterministicRule": {
+          "dimensionId": "DBP",
+          "operator": "<",
+          "value": 100,
+          "unit": "mmHg"
+        }
+      },
+      {
+        "description": "Body mass index between 18.5 and 45 kg per square meter.",
+        "deterministicRule": {
+          "dimensionId": "BMI",
+          "operator": "<=",
+          "value": 45,
+          "unit": "kg/m²"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "Systolic blood pressure below 90 mmHg at screening.",
+        "deterministicRule": {
+          "dimensionId": "SBP",
+          "operator": "<",
+          "value": 90,
+          "unit": "mmHg"
+        }
+      }
+    ],
+    "participants": 310,
+    "studyType": "parallel",
+    "numberOfArms": 2,
+    "phase": "Phase 3",
+    "therapeuticArea": "Cardiovascular",
+    "patientPopulation": "Adults with nonvalvular atrial fibrillation referred for percutaneous left atrial appendage closure",
+    "firstPatientFirstVisit": "2024-06-01",
+    "lastPatientFirstVisit": "2026-03-01",
+    "protocolApprovalDate": "2024-01-15"
+  },
+  {
+    "id": "study-0004",
+    "objectives": [
+      "Demonstrate glycemic improvement with add-on therapy in adults with inadequately controlled type 2 diabetes"
+    ],
+    "endpoints": [
+      "Change in HbA1c from baseline to Week 24",
+      "Proportion reaching HbA1c below seven percent without severe hypoglycemia"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "HbA1c at screening between seven and ten percent inclusive.",
+        "deterministicRule": {
+          "dimensionId": "HbA1c",
+          "operator": ">=",
+          "value": 7,
+          "unit": "%"
+        }
+      },
+      {
+        "description": "HbA1c at screening between seven and ten percent inclusive.",
+        "deterministicRule": {
+          "dimensionId": "HbA1c",
+          "operator": "<=",
+          "value": 10,
+          "unit": "%"
+        }
+      },
+      {
+        "description": "Body mass index at or below forty-five kilograms per square meter.",
+        "deterministicRule": {
+          "dimensionId": "BMI",
+          "operator": "<=",
+          "value": 45,
+          "unit": "kg/m²"
+        }
+      },
+      {
+        "description": "Participants must be at least eighteen years old.",
+        "deterministicRule": {
+          "dimensionId": "age",
+          "operator": ">=",
+          "value": 18,
+          "unit": "years old"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "Estimated GFR below thirty milliliters per minute per 1.73 square meters.",
+        "deterministicRule": {
+          "dimensionId": "eGFR",
+          "operator": "<",
+          "value": 30,
+          "unit": "mL/min/1.73m²"
+        }
+      }
+    ],
+    "participants": 534,
+    "studyType": "parallel",
+    "numberOfArms": 3,
+    "phase": "Phase 3",
+    "therapeuticArea": "Diabetes",
+    "patientPopulation": "Adults with type 2 diabetes mellitus with suboptimal control on baseline oral therapy",
+    "firstPatientFirstVisit": "",
+    "lastPatientFirstVisit": "",
+    "protocolApprovalDate": "2023-11-01"
+  },
+  {
+    "id": "study-0005",
+    "objectives": [
+      "Characterize short-term glycemic and renal responses to investigational glucose-lowering therapy in a crossover design"
+    ],
+    "endpoints": [
+      "Fasting plasma glucose change during each treatment period",
+      "Body weight change from baseline to end of each period"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "HbA1c at screening at least six point five percent.",
+        "deterministicRule": {
+          "dimensionId": "HbA1c",
+          "operator": ">=",
+          "value": 6.5,
+          "unit": "%"
+        }
+      },
+      {
+        "description": "Body weight stable within five percent over the prior eight weeks.",
+        "deterministicRule": {
+          "dimensionId": "weight",
+          "operator": "<=",
+          "value": 120,
+          "unit": "kg"
+        }
+      },
+      {
+        "description": "Fasting plasma glucose elevated at screening visit.",
+        "deterministicRule": {
+          "dimensionId": "fastingPlasmaGlucose",
+          "operator": ">=",
+          "value": 126,
+          "unit": "mg/dL"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "Estimated GFR below forty-five for renal safety monitoring.",
+        "deterministicRule": {
+          "dimensionId": "eGFR",
+          "operator": "<",
+          "value": 45,
+          "unit": "mL/min/1.73m²"
+        }
+      }
+    ],
+    "participants": 48,
+    "studyType": "crossover",
+    "numberOfArms": 2,
+    "phase": "Phase 1",
+    "therapeuticArea": "Diabetes",
+    "patientPopulation": "Adults with type 2 diabetes suitable for tightly controlled inpatient crossover pharmacology",
+    "firstPatientFirstVisit": "2025-02-10",
+    "lastPatientFirstVisit": "2025-08-10",
+    "protocolApprovalDate": "2024-12-01"
+  },
+  {
+    "id": "study-0006",
+    "objectives": [
+      "Evaluate hematologic response and transfusion burden with standard-of-care therapy in cytopenic hematology patients"
+    ],
+    "endpoints": [
+      "Hemoglobin response by Week 12",
+      "Platelet count stabilization without platelet transfusion through Week 24"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Hemoglobin at or below ten grams per deciliter at screening.",
+        "deterministicRule": {
+          "dimensionId": "hemoglobin",
+          "operator": "<=",
+          "value": 10,
+          "unit": "g/dL"
+        }
+      },
+      {
+        "description": "Platelet count at least fifty times ten to the ninth per liter.",
+        "deterministicRule": {
+          "dimensionId": "platelets",
+          "operator": ">=",
+          "value": 50,
+          "unit": "×10⁹/L"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "ECOG performance status greater than two.",
+        "deterministicRule": {
+          "dimensionId": "ECOG",
+          "operator": ">",
+          "value": 2,
+          "unit": ""
+        }
+      }
+    ],
+    "participants": 90,
+    "studyType": "parallel",
+    "numberOfArms": 2,
+    "phase": "Phase 2",
+    "therapeuticArea": "Hematology",
+    "patientPopulation": "Adults with cytopenic hematologic disorders requiring protocol-driven supportive care",
+    "firstPatientFirstVisit": "",
+    "lastPatientFirstVisit": "",
+    "protocolApprovalDate": "2025-01-20"
+  },
+  {
+    "id": "study-0007",
+    "objectives": [
+      "Assess long-term hematologic recovery and neutrophil engraftment kinetics after mobilization therapy"
+    ],
+    "endpoints": [
+      "Median time to neutrophil engraftment",
+      "Transfusion independence rate at Day 100"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Participants must be at least eighteen years old.",
+        "deterministicRule": {
+          "dimensionId": "age",
+          "operator": ">=",
+          "value": 18,
+          "unit": "years old"
+        }
+      },
+      {
+        "description": "Hemoglobin at least eight grams per deciliter prior to mobilization.",
+        "deterministicRule": {
+          "dimensionId": "hemoglobin",
+          "operator": ">=",
+          "value": 8,
+          "unit": "g/dL"
+        }
+      },
+      {
+        "description": "Absolute neutrophil count at least one point zero times ten to the ninth per liter.",
+        "deterministicRule": {
+          "dimensionId": "ANC",
+          "operator": ">=",
+          "value": 1,
+          "unit": "×10⁹/L"
+        }
+      }
+    ],
+    "exclusionCriteria": [],
+    "participants": 200,
+    "studyType": "single-arm",
+    "numberOfArms": 1,
+    "phase": "Phase 4",
+    "therapeuticArea": "Hematology",
+    "patientPopulation": "Adults undergoing peripheral blood stem cell mobilization for planned transplantation",
+    "firstPatientFirstVisit": "2023-04-01",
+    "lastPatientFirstVisit": "2025-12-01",
+    "protocolApprovalDate": "2023-01-10"
+  },
+  {
+    "id": "study-0008",
+    "objectives": [
+      "Evaluate effects of adjunct therapy on hemoglobin stabilization and vaso-occlusive event rate in sickle cell disease"
+    ],
+    "endpoints": [
+      "Annualized rate of vaso-occlusive crises",
+      "Change in fetal hemoglobin fraction from baseline to Week 24"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Hemoglobin at or below ten grams per deciliter at baseline.",
+        "deterministicRule": {
+          "dimensionId": "hemoglobin",
+          "operator": "<=",
+          "value": 10,
+          "unit": "g/dL"
+        }
+      },
+      {
+        "description": "Fetal hemoglobin fraction at least five percent.",
+        "deterministicRule": {
+          "dimensionId": "HbF",
+          "operator": ">=",
+          "value": 5,
+          "unit": "%"
+        }
+      },
+      {
+        "description": "Participants must be at least sixteen years old.",
+        "deterministicRule": {
+          "dimensionId": "age",
+          "operator": ">=",
+          "value": 16,
+          "unit": "years old"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "Systolic blood pressure above one hundred eighty millimeters mercury.",
+        "deterministicRule": {
+          "dimensionId": "SBP",
+          "operator": ">",
+          "value": 180,
+          "unit": "mmHg"
+        }
+      }
+    ],
+    "participants": 80,
+    "studyType": "parallel",
+    "numberOfArms": 2,
+    "phase": "Phase 2",
+    "therapeuticArea": "Sickle Cell Disease",
+    "patientPopulation": "Adults and adolescents with sickle cell disease with recurrent painful crises",
+    "firstPatientFirstVisit": "",
+    "lastPatientFirstVisit": "",
+    "protocolApprovalDate": "2019-09-01"
+  },
+  {
+    "id": "study-0009",
+    "objectives": [
+      "Measure hydroxyurea-driven improvements in hemoglobin and fetal hemoglobin in a single-arm observational treatment cohort"
+    ],
+    "endpoints": [
+      "Median hemoglobin change at twelve weeks",
+      "Proportion achieving HbF target increment from baseline"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Fetal hemoglobin at least three percent at screening.",
+        "deterministicRule": {
+          "dimensionId": "HbF",
+          "operator": ">=",
+          "value": 3,
+          "unit": "%"
+        }
+      },
+      {
+        "description": "Hemoglobin between six and ten grams per deciliter.",
+        "deterministicRule": {
+          "dimensionId": "hemoglobin",
+          "operator": "<=",
+          "value": 10,
+          "unit": "g/dL"
+        }
+      },
+      {
+        "description": "Participants must be adults eighteen to sixty-five years old.",
+        "deterministicRule": {
+          "dimensionId": "age",
+          "operator": "<=",
+          "value": 65,
+          "unit": "years old"
+        }
+      }
+    ],
+    "exclusionCriteria": [],
+    "participants": 120,
+    "studyType": "single-arm",
+    "numberOfArms": 1,
+    "phase": "Phase 3",
+    "therapeuticArea": "Sickle Cell Disease",
+    "patientPopulation": "Adults with sickle cell anemia initiating or optimizing hydroxyurea therapy",
+    "firstPatientFirstVisit": "2024-01-15",
+    "lastPatientFirstVisit": "2025-06-30",
+    "protocolApprovalDate": "2023-10-01"
+  },
+  {
+    "id": "study-0010",
+    "objectives": [
+      "Assess lifestyle and biomarker changes in adults with obesity enrolled in a structured weight-management program"
+    ],
+    "endpoints": [
+      "Percent change in body weight at Week 26",
+      "Change in HbA1c among participants with prediabetes at baseline"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Body mass index at least thirty kilograms per square meter.",
+        "deterministicRule": {
+          "dimensionId": "BMI",
+          "operator": ">=",
+          "value": 30,
+          "unit": "kg/m²"
+        }
+      },
+      {
+        "description": "Body weight at least ninety kilograms.",
+        "deterministicRule": {
+          "dimensionId": "weight",
+          "operator": ">=",
+          "value": 90,
+          "unit": "kg"
+        }
+      },
+      {
+        "description": "HbA1c at least five point seven percent for prediabetes enrollment.",
+        "deterministicRule": {
+          "dimensionId": "HbA1c",
+          "operator": ">=",
+          "value": 5.7,
+          "unit": "%"
+        }
+      },
+      {
+        "description": "HbA1c no higher than six point four percent for prediabetes enrollment.",
+        "deterministicRule": {
+          "dimensionId": "HbA1c",
+          "operator": "<=",
+          "value": 6.4,
+          "unit": "%"
+        }
+      },
+      {
+        "description": "Participants must be between eighteen and sixty-five years old.",
+        "deterministicRule": {
+          "dimensionId": "age",
+          "operator": "<=",
+          "value": 65,
+          "unit": "years old"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "HbA1c at or above six point five percent indicating diabetes requiring alternate protocols.",
+        "deterministicRule": {
+          "dimensionId": "HbA1c",
+          "operator": ">=",
+          "value": 6.5,
+          "unit": "%"
+        }
+      }
+    ],
+    "participants": 150,
+    "studyType": "parallel",
+    "numberOfArms": 2,
+    "phase": "Phase 2",
+    "therapeuticArea": "Obesity",
+    "patientPopulation": "Adults with obesity seeking structured behavioral and dietary intervention",
+    "firstPatientFirstVisit": "2025-03-01",
+    "lastPatientFirstVisit": "2026-01-01",
+    "protocolApprovalDate": "2024-11-01"
+  },
+  {
+    "id": "study-0011",
+    "objectives": [
+      "Compare body-composition and cardiometabolic outcomes between crossover intervention arms in adults with elevated BMI"
+    ],
+    "endpoints": [
+      "Change in waist circumference at twenty-four weeks",
+      "Mean change in office systolic and diastolic blood pressure"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Body mass index between thirty and forty kilograms per square meter.",
+        "deterministicRule": {
+          "dimensionId": "BMI",
+          "operator": "<=",
+          "value": 40,
+          "unit": "kg/m²"
+        }
+      },
+      {
+        "description": "Stable body weight within three percent over eight weeks prior.",
+        "deterministicRule": {
+          "dimensionId": "weight",
+          "operator": "<=",
+          "value": 130,
+          "unit": "kg"
+        }
+      },
+      {
+        "description": "Office systolic blood pressure below one hundred sixty millimeters mercury.",
+        "deterministicRule": {
+          "dimensionId": "SBP",
+          "operator": "<",
+          "value": 160,
+          "unit": "mmHg"
+        }
+      },
+      {
+        "description": "Diastolic blood pressure below one hundred millimeters mercury.",
+        "deterministicRule": {
+          "dimensionId": "DBP",
+          "operator": "<",
+          "value": 100,
+          "unit": "mmHg"
+        }
+      }
+    ],
+    "exclusionCriteria": [],
+    "participants": 600,
+    "studyType": "crossover",
+    "numberOfArms": 2,
+    "phase": "Phase 3",
+    "therapeuticArea": "Obesity",
+    "patientPopulation": "Adults with obesity participating in a nutritional supplement crossover ancillary trial",
+    "firstPatientFirstVisit": "",
+    "lastPatientFirstVisit": "",
+    "protocolApprovalDate": "2012-07-01"
+  },
+  {
+    "id": "study-0012",
+    "objectives": [
+      "Characterize safety and tolerability of an ultra-orphan biologic in a small single-arm rare-disease cohort"
+    ],
+    "endpoints": [
+      "Incidence of treatment-emergent adverse events through Week 12",
+      "Exploratory change in disease-specific functional score"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Participants must be at least twelve years old.",
+        "deterministicRule": {
+          "dimensionId": "age",
+          "operator": ">=",
+          "value": 12,
+          "unit": "years old"
+        }
+      },
+      {
+        "description": "ECOG performance status zero or one.",
+        "deterministicRule": {
+          "dimensionId": "ECOG",
+          "operator": "<=",
+          "value": 1,
+          "unit": ""
+        }
+      },
+      {
+        "description": "Hemoglobin at least nine grams per deciliter.",
+        "deterministicRule": {
+          "dimensionId": "hemoglobin",
+          "operator": ">=",
+          "value": 9,
+          "unit": "g/dL"
+        }
+      }
+    ],
+    "exclusionCriteria": [],
+    "participants": 12,
+    "studyType": "single-arm",
+    "numberOfArms": 1,
+    "phase": "Phase 1",
+    "therapeuticArea": "Rare Diseases",
+    "patientPopulation": "Children and adults with a documented ultra-rare syndromic disorder amenable to enzyme replacement",
+    "firstPatientFirstVisit": "2026-02-01",
+    "lastPatientFirstVisit": "2026-12-01",
+    "protocolApprovalDate": "2025-09-15"
+  },
+  {
+    "id": "study-0013",
+    "objectives": [
+      "Evaluate renal and hepatic safety during prolonged phenotyping and omics profiling in rare disease participants"
+    ],
+    "endpoints": [
+      "Proportion completing twelve months of observation without protocol-defined renal impairment",
+      "Exploratory biomarker discovery endpoints from serial plasma sampling"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Participants must be at least eighteen years old.",
+        "deterministicRule": {
+          "dimensionId": "age",
+          "operator": ">=",
+          "value": 18,
+          "unit": "years old"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "Serum creatinine above two milligrams per deciliter.",
+        "deterministicRule": {
+          "dimensionId": "creatinine",
+          "operator": ">",
+          "value": 2,
+          "unit": "mg/dL"
+        }
+      },
+      {
+        "description": "Alanine aminotransferase above three times upper limit of normal.",
+        "deterministicRule": {
+          "dimensionId": "ALT",
+          "operator": ">",
+          "value": 120,
+          "unit": "U/L"
+        }
+      }
+    ],
+    "participants": 2000,
+    "studyType": "parallel",
+    "numberOfArms": 2,
+    "phase": "Phase 2",
+    "therapeuticArea": "Rare Diseases",
+    "patientPopulation": "Adults with diagnostically unsolved rare diseases undergoing deep phenotyping",
+    "firstPatientFirstVisit": "",
+    "lastPatientFirstVisit": "",
+    "protocolApprovalDate": "2021-03-01"
+  },
+  {
+    "id": "study-0014",
+    "objectives": [
+      "Estimate objective response rate and disease control in pretreated advanced solid tumors receiving investigational immunotherapy"
+    ],
+    "endpoints": [
+      "Confirmed objective response by RECIST 1.1 at Week 12",
+      "Progression-free survival assessed by blinded independent review"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "ECOG performance status zero to two.",
+        "deterministicRule": {
+          "dimensionId": "ECOG",
+          "operator": "<=",
+          "value": 2,
+          "unit": ""
+        }
+      },
+      {
+        "description": "Absolute neutrophil count at least one point five times ten to the ninth per liter.",
+        "deterministicRule": {
+          "dimensionId": "ANC",
+          "operator": ">=",
+          "value": 1.5,
+          "unit": "×10⁹/L"
+        }
+      },
+      {
+        "description": "Platelet count at least one hundred times ten to the ninth per liter.",
+        "deterministicRule": {
+          "dimensionId": "platelets",
+          "operator": ">=",
+          "value": 100,
+          "unit": "×10⁹/L"
+        }
+      },
+      {
+        "description": "Hemoglobin at least nine grams per deciliter without transfusion within seven days.",
+        "deterministicRule": {
+          "dimensionId": "hemoglobin",
+          "operator": ">=",
+          "value": 9,
+          "unit": "g/dL"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "Alanine aminotransferase above three times upper limit of normal.",
+        "deterministicRule": {
+          "dimensionId": "ALT",
+          "operator": ">",
+          "value": 120,
+          "unit": "U/L"
+        }
+      },
+      {
+        "description": "Total bilirubin above two milligrams per deciliter unless Gilbert syndrome documented.",
+        "deterministicRule": {
+          "dimensionId": "totalBilirubin",
+          "operator": ">",
+          "value": 2,
+          "unit": "mg/dL"
+        }
+      }
+    ],
+    "participants": 96,
+    "studyType": "single-arm",
+    "numberOfArms": 1,
+    "phase": "Phase 2",
+    "therapeuticArea": "Oncology",
+    "patientPopulation": "Adults with advanced non-small-cell lung cancer after prior platinum-based chemotherapy",
+    "firstPatientFirstVisit": "2025-05-01",
+    "lastPatientFirstVisit": "2027-01-01",
+    "protocolApprovalDate": "2025-01-01"
+  },
+  {
+    "id": "study-0015",
+    "objectives": [
+      "Compare progression-free survival between treatment arms in metastatic solid tumors with controlled performance status"
+    ],
+    "endpoints": [
+      "Investigator-assessed progression-free survival",
+      "Incidence of renal adverse events grade two or higher"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "ECOG performance status zero or one.",
+        "deterministicRule": {
+          "dimensionId": "ECOG",
+          "operator": "<=",
+          "value": 1,
+          "unit": ""
+        }
+      },
+      {
+        "description": "Hemoglobin at least ten grams per deciliter.",
+        "deterministicRule": {
+          "dimensionId": "hemoglobin",
+          "operator": ">=",
+          "value": 10,
+          "unit": "g/dL"
+        }
+      },
+      {
+        "description": "Estimated GFR at least forty-five milliliters per minute per 1.73 square meters.",
+        "deterministicRule": {
+          "dimensionId": "eGFR",
+          "operator": ">=",
+          "value": 45,
+          "unit": "mL/min/1.73m²"
+        }
+      },
+      {
+        "description": "Serum creatinine no higher than one point five milligrams per deciliter.",
+        "deterministicRule": {
+          "dimensionId": "creatinine",
+          "operator": "<=",
+          "value": 1.5,
+          "unit": "mg/dL"
+        }
+      }
+    ],
+    "exclusionCriteria": [],
+    "participants": 420,
+    "studyType": "parallel",
+    "numberOfArms": 2,
+    "phase": "Phase 3",
+    "therapeuticArea": "Oncology",
+    "patientPopulation": "Adults with metastatic solid tumors and adequate bone marrow and renal reserve",
+    "firstPatientFirstVisit": "2024-09-01",
+    "lastPatientFirstVisit": "2026-12-01",
+    "protocolApprovalDate": "2024-04-01"
+  },
+  {
+    "id": "study-0016",
+    "objectives": [
+      "Evaluate cognitive and functional outcomes with a disease-modifying therapy in early-stage neurodegenerative disease"
+    ],
+    "endpoints": [
+      "Change in standardized cognitive composite score at Week 52",
+      "Time to clinically meaningful decline on investigator assessment"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Mini-Mental State Examination score between twenty and twenty-six inclusive.",
+        "deterministicRule": {
+          "dimensionId": "MMSE",
+          "operator": ">=",
+          "value": 20,
+          "unit": ""
+        }
+      },
+      {
+        "description": "Participants must be fifty to eighty-five years old.",
+        "deterministicRule": {
+          "dimensionId": "age",
+          "operator": "<=",
+          "value": 85,
+          "unit": "years old"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "Serum creatinine above two milligrams per deciliter.",
+        "deterministicRule": {
+          "dimensionId": "creatinine",
+          "operator": ">",
+          "value": 2,
+          "unit": "mg/dL"
+        }
+      }
+    ],
+    "participants": 180,
+    "studyType": "parallel",
+    "numberOfArms": 2,
+    "phase": "Phase 2",
+    "therapeuticArea": "Neurology",
+    "patientPopulation": "Early Alzheimers disease with MMSE twenty to twenty-six at screening",
+    "firstPatientFirstVisit": "2025-01-20",
+    "lastPatientFirstVisit": "2027-06-30",
+    "protocolApprovalDate": "2024-10-15"
+  },
+  {
+    "id": "study-0017",
+    "objectives": [
+      "Assess clinical benefit and cardiac safety of adjunct therapy in mild-to-moderate cognitive impairment"
+    ],
+    "endpoints": [
+      "Cognitive endpoint change on standardized battery at Month 12",
+      "Incidence of QT prolongation events on serial ECG monitoring"
+    ],
+    "inclusionCriteria": [
+      {
+        "description": "Mini-Mental State Examination score at least twenty at screening.",
+        "deterministicRule": {
+          "dimensionId": "MMSE",
+          "operator": ">=",
+          "value": 20,
+          "unit": ""
+        }
+      },
+      {
+        "description": "Participants must be fifty-five to eighty-five years old.",
+        "deterministicRule": {
+          "dimensionId": "age",
+          "operator": ">=",
+          "value": 55,
+          "unit": "years old"
+        }
+      }
+    ],
+    "exclusionCriteria": [
+      {
+        "description": "Corrected QT interval above five hundred milliseconds on screening ECG.",
+        "deterministicRule": {
+          "dimensionId": "QTc",
+          "operator": ">",
+          "value": 500,
+          "unit": "ms"
+        }
+      }
+    ],
+    "participants": 260,
+    "studyType": "parallel",
+    "numberOfArms": 2,
+    "phase": "Phase 3",
+    "therapeuticArea": "Neurology",
+    "patientPopulation": "Adults with mild cognitive impairment or early dementia with measurable baseline cognition",
+    "firstPatientFirstVisit": "",
+    "lastPatientFirstVisit": "",
+    "protocolApprovalDate": "2025-02-01"
+  }
+]

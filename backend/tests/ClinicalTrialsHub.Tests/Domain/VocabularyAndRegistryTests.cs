@@ -15,6 +15,15 @@ public sealed class VocabularyAndRegistryTests
     }
 
     [Test]
+    public void TryGetDefinition_mirrors_TryResolve_and_Finds_id()
+    {
+        Assert.That(EligibilityDimensionRegistry.TryGetDefinition("  bMi ", out var def), Is.True);
+        Assert.That(def, Is.Not.Null);
+        Assert.That(def!.Id, Is.EqualTo("BMI"));
+        Assert.That(EligibilityDimensionRegistry.TryGetDefinition("unknown-z", out _), Is.False);
+    }
+
+    [Test]
     public void Unit_less_dimensions_have_empty_allowed_units()
     {
         var ecog = EligibilityDimensionRegistry.FindById("ecog");

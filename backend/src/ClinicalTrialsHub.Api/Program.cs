@@ -68,6 +68,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddHealthChecks();
+// Required for ExceptionHandlerMiddleware (IProblemDetailsService); error responses for this API are still written as ErrorResponseDto in GlobalExceptionHandler.
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 

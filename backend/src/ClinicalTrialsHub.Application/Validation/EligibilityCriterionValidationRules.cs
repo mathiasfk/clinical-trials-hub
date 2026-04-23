@@ -56,14 +56,7 @@ public static class EligibilityCriterionValidationRules
             return;
         }
 
-        if (!EligibilityDimensionRegistry.TryResolveCanonicalId(rule.DimensionId, out _))
-        {
-            context.AddFailure($"{prefix}.deterministicRule.dimensionId", "dimensionId must reference a supported dimension");
-            return;
-        }
-
-        var definition = EligibilityDimensionRegistry.FindById(rule.DimensionId);
-        if (definition is null)
+        if (!EligibilityDimensionRegistry.TryGetDefinition(rule.DimensionId, out var definition))
         {
             context.AddFailure($"{prefix}.deterministicRule.dimensionId", "dimensionId must reference a supported dimension");
             return;
